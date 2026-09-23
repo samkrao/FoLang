@@ -3,7 +3,7 @@
 </p>
 
 
-<a id="folang"></a>
+<a id="FoLang"></a>
 [Foλang](https://github.com/samkrao/folang) is a general-purpose programming language designed to be **expressive, consistent, and extensible**, merging functional fluency with object-centric abstractions.
 
 
@@ -71,7 +71,7 @@ A post-1.0 correction may fix an implementation/specification discrepancy or rem
 
 ## Lexical Profile and Statement Termination
 
-The consolidated FoLang EBNF referenced by [Appendix A](#appendix-a---complete-folang-ebnf-grammar) is the formal lexical and syntactic grammar. The rules below restate source-level constraints needed by parser/frontend implementations and conformance tests without duplicating the complete EBNF in this document.
+The consolidated FoLang EBNF referenced by [Appendix A](#appendix-a---complete-FoLang-ebnf-grammar) is the formal lexical and syntactic grammar. The rules below restate source-level constraints needed by parser/frontend implementations and conformance tests without duplicating the complete EBNF in this document.
 
 ### Source Encoding and Identifiers
 
@@ -326,11 +326,11 @@ The backend interchange contract must identify the runtime-operation contract ve
 
 #### Default / Reference Backend
 
-The default FoLang backend is also the **reference backend implementation**. Its purpose is to provide an executable, inspectable example of how the FoLang specification can be implemented and to give backend implementers a concrete behavioural baseline for conformance testing.
+The default FoLang backend is also the **reference backend implementation**. Its purpose is to provide an executable, inspectable example of how the FoLang specification can be implemented and to give backend implementers a concrete behavioral baseline for conformance testing.
 
 The written FoLang specification remains normative. The reference backend demonstrates the required externally observable semantics, but its internal algorithms, allocation strategy, memory-management choices, data structures, optimization level, and performance characteristics are not themselves language requirements unless this specification explicitly says otherwise. If an implementation defect in the reference backend conflicts with the written specification, the written specification takes precedence.
 
-A third-party backend may use a completely different runtime architecture or memory model and may optimize semantics differently, provided that FoLang programs observe behaviour conforming to this specification. Backend implementations may validate their behaviour against the reference backend and the FoLang conformance tests where applicable.
+A third-party backend may use a completely different runtime architecture or memory model and may optimize semantics differently, provided that FoLang programs observe behavior conforming to this specification. Backend implementations may validate their behavior against the reference backend and the FoLang conformance tests where applicable.
 
 - Backend orchestration is implemented in **Go**
 - Code generation target is **C++**
@@ -374,7 +374,7 @@ Rules:
 - the frontend/backend interchange artifact is written beneath the reserved root-level `build/` domain;
 - each frontend build embeds default protocol, HIR-schema, wire-format, and runtime-operations versions; an absent installed contract selects those fixed defaults, while a present contract must supply every field and be well-formed and supported;
 - that contract file resides in the same installation directory as the FoLang compiler executable;
-- `wire="protobuf"` in the example above requests Protocol Buffers; the current protobuf representation is a provisional, language-neutral `Value`/`Struct`/`List` artifact tree carrying the logical `folang-hir/1` model, not yet a typed protobuf definition of every HIR node and interface, and a typed schema with node messages and interface `oneof` declarations is required before treating it as the stable third-party-backend schema; another supported contract may request a different compatible wire format/version;
+- `wire="protobuf"` in the example above requests Protocol Buffers; the current protobuf representation is a provisional, language-neutral `Value`/`Struct`/`List` artifact tree carrying the logical `FoLang-hir/1` model, not yet a typed protobuf definition of every HIR node and interface, and a typed schema with node messages and interface `oneof` declarations is required before treating it as the stable third-party-backend schema; another supported contract may request a different compatible wire format/version;
 - `runtime_operations` identifies the backend-neutral runtime-operation contract understood by the selected backend;
 - backends consume the validated frontend artifact from `build/`;
 - canonical filesystem rules for `build/` are defined only in [Project Layout](#project-layout).
@@ -1326,7 +1326,7 @@ IntRange co.type = co.int->(..);
 
 The arrow-tail syntax is part of the type expression. A variable subsequently uses the named derived type rather than repeating the derivation inline.
 
-#### Specialized Types 
+#### Specialized Types
 
 ```folang
 
@@ -1343,11 +1343,11 @@ When Geneircs are initialized with concrete type, Folang doesn't allow them to b
 
 ***
 
-### User Defined Types
+### User-Defined Types
 
-Folang supports rich User Defined types, for various use cases and purposes.
+FoLang supports a rich set of user-defined type forms for different modeling requirements.
 
-Folang doesn't allow inner or nested or anonymoust types inside a type definiton.
+FoLang does not permit ordinary inner, nested, or anonymous named type declarations directly inside another type definition except through the explicit mechanisms defined by the language.
 
 #### CStructs
 
@@ -1364,9 +1364,9 @@ _ co.cstruct = {
 ```
 `co.cstruct` is a C-like value type: it is passed by value, has a simple memory layout, and is safe to cross supported ABI boundaries.
 
-**Worth Noting**  lke packages where names are fetched from folder names top level types names are fetched from file name and the name is canonical (case insensitive).
+**Worth noting:** as package names are derived from directory structure, a top-level type declared with `_` derives its name from the source filename. The resulting type name is canonical and case-insensitive according to the filename-derived declaration rules.
 
-`_` is the place holder 
+`_` is the filename-derived declaration placeholder. 
 
 #### Structs
 
@@ -1379,17 +1379,17 @@ _ co.struct = {
 }
 
 ```
-Folang structs are pure types, no initialization no additional info like const, voldatile, final, lazy etc.,
+FoLang structs are pure data types. They do not carry class-style initialization or field policies such as constant, final, lazy, or similar object-state modifiers unless a separate struct rule explicitly permits them.
 
-No method of functions, to make structs act like objects we need to use companion units and asociated functions
+Struct bodies do not define ordinary instance methods. Struct-associated behavior is supplied through companion units and associated functions.
 
-structs don't support inheritance or any other oops concepts
+Structs do not participate in class inheritance or the class OOP relationship model.
 
-structs allows composition or embedding.
+Structs support composition/embedding according to the struct rules.
 
 
 
-#### interfaces
+#### Interfaces
 
 ```folang
 // IEmployee.fol
@@ -1397,7 +1397,7 @@ _ co.interface = {
     storeEmployee(emp Employee)->(Employee);
 }
 ```
-Folang interfaces are pure specification not subtype or partially implemented methods or state is allowed.
+FoLang interfaces are pure behavioral specifications. They contain no instance state and no partially implemented concrete behavior; their methods are abstract requirements.
 
 #### Classes
 
@@ -1447,9 +1447,9 @@ _ co.class = {
 }
 ```
 
-Folang classes can contain member fields and member methods
+FoLang classes may contain instance fields and methods.
 
-They have the following access specifiers
+Class members may use the following access specifiers:
 
    1. @co.dap.public
    2. @co.dap.private ( default )
@@ -1533,14 +1533,14 @@ _ co.extension->(fortype=somePkg.Employee) = {
 
 A `co.extension` is a reusable collection of fully implemented methods that adds behavior to one explicitly selected class **without creating a subclass or changing the target class's nominal type identity or inheritance hierarchy**. The extension chooses its target through the mandatory `fortype` argument; the target class does not adopt the extension through `@co.dap.oops`.
 
-Folang extensions are after thought to enhance existing class it can be done two ways 
+FoLang provides two distinct ways to extend class behavior:
 
 1. Inheritance
 2. Extensions
 
-Inheritance is costly mechanism and also for simple addition of behaviour it is not advisable to inherit a class.
+Inheritance changes the class hierarchy and is therefore not the preferred mechanism when the requirement is only to add reusable behavior.
 
-In such scenarios Folang allows extensions to classes.
+For those cases, FoLang provides extensions without changing the target class's nominal inheritance relationship.
 
 #### Signatures
 ```folang
@@ -1555,7 +1555,7 @@ _ co.signature = {
 }
 ```
 
-Signatures contain Both methods and shared state. They fall between structs and classes  where we want multiple implementations but not as heavy as classes.
+A signature defines a structural contract that may include callable requirements and associated declarations/state required by that contract. It is intended for cases where multiple module implementations must satisfy the same shape without introducing a class hierarchy.
 
 
 
@@ -1574,13 +1574,13 @@ _ co.module->(matches=StackSignature) = {
 ```
 
 
-Module gives you  a kind of final non inheritable class model of main stream languages.
+A module is a named singleton implementation unit. It is non-inheritable and is commonly used where a single implementation should satisfy a signature without creating class instances.
 
 ***
 
-### Type classes
+### Type Classes
 
-Folang, typeclass defines a type-directed behavioral contract used for ad-hoc polymorphism. An instance supplies the implementation of that contract for a specific type or valid type combination
+In FoLang, a typeclass defines a type-directed behavioral contract for ad-hoc polymorphism. An instance supplies the implementation of that contract for a specific type or valid combination of types.
 
 #### Functors
 
@@ -1669,7 +1669,7 @@ _ co.typeclass = {
 
 ### Instances
 
-Instances are implementations for one of the typclass type
+An instance provides an implementation of a typeclass for the type or type combination named by the instance declaration.
 
 ```folang
 // ListFunctor.fol
@@ -1738,7 +1738,7 @@ _ co.matcher->(type=co.int) = {
 
 ***
 
-### Object types
+### Object Types
 
 #### Annotations
 ```folang
@@ -1754,7 +1754,7 @@ _ co.object = {
 }
 ```
 
-Folang provides a way to define annotations and use them using reflections in the code, to make decisions
+FoLang allows annotations to be defined as named objects and inspected through the reflection facilities where annotation-driven runtime or compile-time decisions are required.
 
 #### Associated Objects
 
@@ -1764,7 +1764,7 @@ _ co.object->(for=someAnnotation) = {
     ...
 }
 ```
-Folang doesn't provide global or shared variables, in classes the only way to have them is through associated objects they act like singleton and associate with single/multiple types at the same time.
+FoLang does not place global/shared state directly on classes. Class-associated constant, immutable, global, shared, or lock-protected state is owned by an associated `co.object`, which is a named singleton and may be associated with one or more types.
 
 ```folang
 // ProducerConsumerShared.fol
@@ -1816,7 +1816,7 @@ labelBlock co.block = {
 labelBlock.expand();
 ```
 
-Named blocks are reusable code
+A named block is a reusable named block value that can be expanded according to the `co.block` rules.
 
 #### Anonymous Blocks
 
@@ -1892,7 +1892,7 @@ Shape.Point                         Shape          Point       {}
 ```
 
 ***
-### Variable declaration and initialization
+### Variable Declaration and Initialization
 
 ```folang
 intVar co.int; //isNone() true  by default it is initialized to co.const.none if a value not provided
@@ -1901,7 +1901,7 @@ intVar1 co.int = 10; // initialized with 10
 
 intVar2 := 10 ; //defines and initialized with 10 inferred to `co.int` 
 
-intVar3 ?= 20; //defines and intialized with 20 inferred to co.int
+intVar3 ?= 20; // defines and initializes with 20, inferred as co.int
 
 intVar3 ?=40; // sets the variable to 40 as it exists 
 
@@ -1915,7 +1915,7 @@ intVar1 = "abc"; // compiler error
 
 intVar2 := 30; // compiler error as intVar2 already defined in scope
 
-intVar4 ::= 'c'; // Valid behaves like ?= but now value is charcter c
+intVar4 ::= 'c'; // valid under the dynamic-binding rules; current value is character 'c'
 
 ```
 
@@ -1923,25 +1923,25 @@ intVar4 ::= 'c'; // Valid behaves like ?= but now value is charcter c
 
 ### Symbols
 
-Folang supports generic symbols through `co.symbol`
+FoLang exposes compiler/language symbol values through `co.symbol` where symbol objects are required by AST or metaprogramming facilities.
 
 ***
 
-### Function Shaped Declarations
+### Function-Shaped Declarations
 
 #### Functions and Methods
 
 ```folang
 
 add ( a co.int, b co.int )->(co.int)={
-    $ => a + b;
+    $=> a + b;
 }
 
 ```
 ##### Multiple Return
 ```folang
 returnPair( a co.int, b co.int)->(co.int, co.int)={
-    $ => b, a;
+    $=> b, a;
 }
 ```
 ##### Inner function
@@ -1950,35 +1950,35 @@ returnPair( a co.int, b co.int)->(co.int, co.int)={
 someFun( a co.int, b co.int)->(co.int) = {
 
     someInner(b co.int)->(co.int)= {
-        $ => b * 2;
+        $=> b * 2;
     }
 
-    $ => someInner( a) + b;
+    $=> someInner( a) + b;
 
 }
 ```
 ##### Anonymous Inner Functions
 
-Anonymous function cannot be standalone functions
+Anonymous functions are not standalone top-level declarations.
 
 ```folang
 
 someFun( a co.int, b co.int )->(co.int)={
 
-    $ => (a co.int)->(co.int){
-        $ => a * 4;
+    $=> (a co.int)->(co.int){
+        $=> a * 4;
     }(b) + a;
 
 }
 ```
 
-Anonymous functions either should be assigned to variable or immediately invoked like above
+An anonymous function must be used in a context that consumes the resulting function object, such as assignment to a variable or immediate invocation.
 
 ```folang
 someFun( a co.int, b co.int )->(co.int)={
 
     temp co.function = (a co.int)->(co.int){
-        $ => a * 4;
+        $=> a * 4;
     }
 
     temp( b) + a;
@@ -1991,7 +1991,7 @@ someFun( a co.int, b co.int )->(co.int)={
 ```folang
 
 add ( a co.int)(b co.int)(c co.int)->(co.int)={
-    $ => a + b + c;
+    $=> a + b + c;
 }
 
 someVar co.function = add(1);
@@ -2045,7 +2045,7 @@ usage:
   fun1(10);      // k = 10 and b = 'A', the declared default value
 
 
-``
+```
 
 #### Variadic Functions
 
@@ -2071,10 +2071,9 @@ adder()->(IntAdder) ={
 }
 
 ```
-Any Function shape returning function then the inner function is called closure
-which captures state of its outer function.
+When a function returns an inner function that captures bindings from the enclosing lexical scope, the returned function is a closure. The captured bindings remain part of that closure's state according to the closure rules.
 
-#### Named Callable-Type Implementation 
+#### Named Callable-Type Implementation
 
 An ordinary named function may implement a named `co.type` whose resolved underlying type is callable. This form reuses the callable contract instead of restating parameter and result types.
 
@@ -2097,9 +2096,9 @@ add IntBinary(a, b) = a + b;
 ```
 > name CallableType(parameterNames) = expression;
 
-#### Function patterns 
+#### Function Patterns
 
-Folang supports function patterns through  Expression bodied functions
+FoLang expresses function-pattern behavior through ordinary functions whose expression body performs pattern matching.
 
 ```folang
 classify(n co.int)->(co.string) =
@@ -2109,18 +2108,18 @@ classify(n co.int)->(co.string) =
         .default("zero");
 ```
 
-#### Expression Bodied function in polymorphic types
+#### Expression-Bodied Functions with Polymorphic Callable Types
 ```folang
 PolyId co.type = co.polymorphic({U}, (U)->(U));
 
 identity PolyId(value) = value;
 ```
 
-#### Local, Nested types
+#### Local and Nested Types
 
-##### Local types
+##### Local Types
 
-Folang provides `@co.dap.Local` for all the top level definitions including functions to emulate the kind of inner functions/types behavior
+FoLang provides `@co.dap.local` for eligible top-level definitions, including functions and types, to restrict a declaration to one or more designated owners without physically nesting the declaration in source.
 
 ```folang
 // EmployeeAddress.fol
@@ -2141,9 +2140,9 @@ _ co.struct = {
 }
 ```
 
-if local is to refer single type then `for=hr.employee.Employee` is valid in case of attaching to multiple types we need list representation
+When a local declaration applies to one owner, `for=hr.employee.Employee` is sufficient. When it applies to multiple owners, `for=[...]` uses the list form.
 
-##### Nested types
+##### Nested Types
 
 
 ```folang
@@ -2178,12 +2177,12 @@ addFunc(a co.int , b co.int)->(co.int)={
 }
 
 subFunc( a co.int, b co.int)->( co.int)={
-    $ => someFunc(a) -b; // compiler error as someFunc is for only addFunc
+    $=> someFunc(a) -b; // compiler error as someFunc is for only addFunc
 }
 ```
 Nested vs Local
 
-Nested functions/types behave exactly like inner types/functions they can access outer types state/variables/memebers
+Nested declarations model true inner declarations: they may resolve the enclosing declaration's visible state, variables, parameters, and members according to normal accessibility and lexical-capture rules.
 
 ```folang
 @co.dap.local(for=addFunc(co.int, co.int)->(co.int))
@@ -2212,9 +2211,9 @@ addFunc(a co.int , b co.int)->(co.int)={
         $=> a + b;
     }
 ```
-Function iniling is making the code copied to call site.
+`@co.dap.inline` requests inline expansion of the function at eligible call sites according to the compiler/backend rules.
 
-#### Deferred Function
+#### Deferred Functions
 ```folang
 someErrorFun(a co.int)->() = {
     resource Resource = acquireResource();
@@ -2228,21 +2227,20 @@ someErrorFun(a co.int)->() = {
     performOperation(resource);
 }
 ```
-Folang provides deferred function feature which executes at the end of function irrespective of successful or effect occurred or not.
+FoLang deferred functions are registered for execution when the enclosing function completes, including completion through an effect path, subject to the defer ordering and effect-handling rules.
 
-#### Function scopes
+#### Function Scopes
 
-Folang provides 3 different scopes to functions 
+FoLang defines three function-scope modes:
 
     1. @co.dap.dynamicscope
     2. @co.dap.mixedscope
+    3. lexical scope — the default when neither scope annotation is present.
 
-default `lexicalscope`
 
+#### Function Chaining
 
-#### Chained Functions
-
-Folang provide a feature where you can chain the function call by passing the results to the next function.
+FoLang function chaining passes the result positions of one function invocation to the next chained invocation.
 
 ```folang
 addFunc(a co.int, b co.int)->(co.int)={
@@ -2256,19 +2254,19 @@ subFunc( a co.int, b co.int)->(co.int)={
 myFunc(a co.int, b co.int)->(co.int,co.int)=>>addFunc($1,$2);
 someOtherFunc()->(co.int, co.int)=>>subFunc($1,$2);
 ```
-> $ is a bind variable which in this case bound to results
+> `$1` through `$N` are bind variables for the immediately preceding chained call's result positions.
 
-> $1 .. $N declared return order.
+> `$1` through `$N` correspond to declared return order.
 
 #### Decorators
-Folang provides decorators for adding addition behaviour to functions and/or methods
+FoLang decorators add behavior around functions and methods according to the decorator's declared scope and execution phase.
 
 ```folang
   @co.dap.decorator
   myDecorator(target co.function)->(co.function) = { }
 ```
 
-Attribbutes of @co.dap.decorator
+`@co.dap.decorator` supports attributes such as:
 
     scope= runtime, compiletime
     when= before, after, around , afterEffect
@@ -2329,9 +2327,9 @@ if else macro
 
 ```
 
-Folang Provides macros to create constructs that wraps folang logic. Macros in Folang are compile time rewrite to AST.
+FoLang macros define compile-time source/AST transformations. They may construct or rewrite FoLang syntax according to the macro metadata and hygiene rules.
 
-#### Extension methods
+#### Extension Methods
 
 ```folang
     @co.dap.extension(fortype=co.string, what=extends)
@@ -2344,11 +2342,11 @@ Folang Provides macros to create constructs that wraps folang logic. Macros in F
         $=> this == str;
     }
 ```
-Folang provides extension methods to extend structs and/or modules behaviour. For classes we folang recommends to use extensions
+FoLang extension methods add behavior to supported structs, modules, or other permitted targets without modifying the original declaration. For classes, reusable behavior should use the class extension mechanisms defined by the language rather than introducing inheritance solely for convenience.
 
-##### Activating Extension methods
+##### Activating Extension Methods
 
-Activation uses the directive `@co.dap.use` For the current package, omit `from`:
+Activation uses `@co.dap.use`. For declarations in the current package, omit `from`:
 
 ```folang
 @co.ddap.use(methods=[equals, upperCase])
@@ -2379,7 +2377,7 @@ For another package, use its alias or complete package path:
     }
 ```
 
-Templates are text replacing mechanism  where typed ones are inline function calls
+Templates are compile-time substitution/expansion mechanisms. Typed templates preserve the declared callable contract and may be expanded similarly to inline function calls according to the template rules.
 
 
 
@@ -2400,17 +2398,17 @@ co.out.println(lst[0]);
 lst[1] = 22;
 ```
 
-Indexers provides array like access to User defined data type.
+Indexers provide array-like `[]` and `[]=` access for user-defined types.
 
 #### Execution Model
 
-Foλang executes ordinary code **sequentially by default**. A normal function or
+FoLang executes ordinary code **sequentially by default**. A normal function or
 method declaration therefore requires no execution-model decorator merely to be
 called sequentially.
 
 The built-in decorator `@co.dap.executionmodel(...)` is used only when a
 declaration requires non-default execution semantics that must remain observable
-across conforming FoLang implementations. The language exposes an execution-model choice only when that choice changes required FoLang behaviour. A distinction that changes only a backend's internal implementation strategy is not a separate FoLang execution model.
+across conforming FoLang implementations. The language exposes an execution-model choice only when that choice changes required FoLang behavior. A distinction that changes only a backend's internal implementation strategy is not a separate FoLang execution model.
 
 
 ```folang
@@ -2448,7 +2446,7 @@ for scheduling
 
 
 
-#### Native methods
+#### Native Methods
 
 ```folang
 @co.dap.native
@@ -2457,10 +2455,9 @@ nativeMethod(a co.int, b co.int)->(co.int) ={
 }
 
 ```
-Folang provides various constructs which must be used with `native` annotations
-like functions containing `co.native` refer [Built in Packages](#built-in-packages)
+FoLang provides native-only constructs that require the applicable `@co.dap.native` classification, including declarations that use `co.native` facilities. See [Built-in Packages](#built-in-packages).
 
-These native methods should be in component kind `native` or library of type `native`.
+Native methods must be declared within a native component or a library whose capability domain is `native`.
 
 #### Associated Functions
 
@@ -2487,7 +2484,7 @@ These native methods should be in component kind `native` or library of type `na
     }
 
 ```
-Associated function must be declared in companion units named after struct type .comp.unit
+Associated functions for a struct must be declared in that struct's companion unit, using the `<StructName>.comp.unit.fol` naming convention.
 
 ***
 
@@ -2534,7 +2531,7 @@ call does not make the lambda an argument of `consume`.
 
 ***
 
-### Condition Loops and Ternary operations
+### Conditions, Loops, and Ternary Operations
 
 #### Conditions
 
@@ -2615,11 +2612,9 @@ x.match(co.pattern.Any).case(co.int => ...).case(co.float => ...).case(0 => ...)
 x.match(PositiveEvenMatcher).case(0 => "Neither even nor odd").case(2 => "First Even Prime").default(...);
 ```
 
-Folang provides powerful pattern matching system with ability to write custom matchers
+FoLang provides pattern matching with both built-in matcher categories and user-defined custom matchers.
 
-Folang has default matchers built in 
-match() means value based matching there are other types of built in matchers
-like 
+`match()` uses the default value matcher. FoLang also provides the following built-in matcher categories:
 
    1. co.pattern.Type
    2. co.patter.Value -> (default)
@@ -3161,7 +3156,7 @@ This is in conceptual stage not supported.
 A) Abstract vs concrete type members
 B) Path-dependent types
     1. Type-level projection
-    2. Path-dependent In folang how it would be
+    2. Path-dependent In FoLang how it would be
 ```
 
 #### Polymorphic Types
@@ -3358,7 +3353,7 @@ _ co.unit = {
 }
 
 ```
-`folang` provides partial specialization below is the example for partial specializationn
+FoLang supports partial specialization. The following example specializes only part of a generic declaration's type mapping:
 //sommGen7.unit.fol
 ```folang
 _ co.unit = {
@@ -3390,14 +3385,14 @@ _ co.unit = {
 ```
 
 
-**fields of specialize**
+**Fields of `@co.dap.specialize`**
 
 |Attribute|Values|
 |---|---|
-| target| the generic fully qualified name includes package name if omitted it is current package |
-| types| resoultion types|
-| priority||
-| strategy|intrinsic|
+| target | Fully qualified generic target name; when qualification is omitted, resolution begins in the current package according to the normal lookup rules. |
+| types | Type-resolution mappings for the specialization. |
+| priority | Optional specialization priority where the specialization rules permit it. |
+| strategy | Specialization strategy, such as `intrinsic`, where supported. |
 
 ***
 
@@ -4106,7 +4101,7 @@ x.reflect().getKind();   // value
 ***
 
 
-### Dynamic Vm Runtime
+### Dynamic VM Runtime
 
 The `@co.ddap.dynamicruntime` directive enables full access to the `co.meta` package. It is valid **only for source files in a `dynamicvmrt` capability domain**: a standalone `@co.dap.library(type=dynamicvmrt)` project or the project-local `components/dynamicvmrt/` component. In every permitted source file it must obey the category-wide [Directive Placement](#directive-placement) rule and appear at file top level, never inside the `_ co.component` declaration or any nested declaration/body. Using `@co.ddap.dynamicruntime` in an executable application, packaged code, an application projected library/component, a `native` domain, or any other source context is a compiler error.
 
@@ -4146,7 +4141,7 @@ _ co.loader={
 ***
 
 
-### Native code
+### Native Code
 
 `@co.dap.native` marks a function or method declaration as a **native implementation declaration**. It does not grant native capability merely because the annotation is present. The annotation is valid only inside a `native` library/component domain when the installation permits the native capability.
 
@@ -4208,7 +4203,7 @@ The currently defined standard implementation classification is:
 
 ***
 
-### Annotation Decorators, Pragmas and Directives
+### Annotations, Decorators, Pragmas, and Directives
 
 The entries in this language-defined inventory form the current built-in metadata registry used for `@co.*` name recognition. The parser must recognize a language-owned metadata name through this predefined registry before accepting the metadata application. Field/argument preservation and partial frontend field validation follow [Built-in Metadata Parsing](#built-in-metadata-parsing). Every entry classified as `DIRECTIVE` follows the category-wide [Directive Placement](#directive-placement) rule and is file-level only. Every entry classified as `PRAGMA` additionally follows the category-wide [Pragma Placement](#pragma-placement) rule and is valid only in an executable application's `src/appl.fol`.
 
@@ -4359,7 +4354,7 @@ This restriction applies automatically to future entries added to the language-o
 
 #### Method/Function Dispatch
 
-  Folang default dispatch is single dispatch static overload resolution at compile time
+  FoLang uses compile-time static overload resolution and single-dispatch method semantics by default.
 
 ##### Enabling Dynamic Multiple Dispatch
 
@@ -4372,20 +4367,17 @@ Dynamic multiple dispatch uses the **same applicability, nominal widening, speci
 
 #### Function overload
 
-Folang allows function overload to normal functions not every function shape
-the normal functions please refer [Functions and Methods](#functions-and-methods), Multiple results is part of function overload but inner functions cannot be overloaded.
+FoLang permits overloading for the ordinary function categories defined in [Functions and Methods](#functions-and-methods); not every function-shaped declaration is overloadable. Result arity participates in the function contract as specified by the overload rules, while inner functions cannot be overloaded.
 
-> **Note** In folang every function shape is different although they look like functions cannot mix one shape with another including normal functions/methods
+> **Note:** FoLang treats each function-shaped declaration category as semantically distinct. Categories that share function-like syntax do not become interchangeable with ordinary functions or methods unless the specification explicitly defines that relationship.
 
-#### Interface/parent class specific method overriding
+#### Interface/Parent-Class-Specific Method Implementation and Override
 
-Folang provide Interface Specific method implementatin using
-`@co.dap.implement` and mixin and or trait specific overriding  using `@co.dap.override`.
+FoLang provides interface-specific method implementation through `@co.dap.implement` and mixin/trait-specific overriding through `@co.dap.override`.
 
-By default it overrides/implements all the methods with same signature across multiple interfaces/traits/mixins
+Without a type-specific selector, an implementation/override applies to all applicable inherited requirements with the same resolved signature according to the conflict rules.
 
-for specific interface method or trait/mixin abstract or virtual method  override
-supply attribute `type` which takes `*` (Default with no type) , single type `type = someInterface1`, multiple types as list `types=[a,b,c]`
+To target a specific interface, trait, or mixin requirement, supply the applicable type selector: `type=*` for the default/all-target form, `type=SomeInterface` for one target, or `types=[A, B, C]` for multiple targets.
 
 
 #### Lifecycle Members: `@@new`, `@@init`, and `::` Invocation
@@ -4592,7 +4584,7 @@ _ co.unit = {
             }
         }.init();  //parameter less init only as co.class doesn't have any other init
 
-        empObj1.doSomething("abc"); //Compiler error as co.class doesn't have this method
+        empObj1.doSomething("abc"); // compiler error: co.class does not define this method
     }
 }
 // someInterface.fol
@@ -4619,7 +4611,7 @@ _ co.unit={
         }.init();  //when assigned to interface only default init no parameters
 
         empObj1.doSomething("abc"); // successful 
-        // internalluy the anonymous class implements the interaface someInterface as empObj1 is now the type someInterface
+        // internally the anonymous class implements the interface someInterface as empObj1 is now the type someInterface
     }
 }
 
@@ -4670,19 +4662,29 @@ _ co.unit={
 
 
         empObj1.doSomething("abc"); // successful 
-        // internalluy the anonymous class inherits the class SomeClass as empObj1 is now the type SomeClass
+        // internally the anonymous class inherits the class SomeClass as empObj1 is now the type SomeClass
     }
 }
 
 ```
 
-> `folang` internally creates anonymous class and object using init method
+> FoLang internally creates anonymous class/object values through the ordinary anonymous-class construction and initialization machinery.
 
 > Their ordinary construction/use continues to follow the anonymous-class rules independently of the lifecycle facility.
 
+
+
+#### Conceptual Prototype Delegation for Non-Class Object Kinds
+
+FoLang uses **prototype delegation** only as a **conceptual member-resolution model** for specifying how language-defined members are available on runtime object kinds that do not use inheritance. It defines the required member-resolution contract without prescribing a physical runtime representation.
+
+The idea is loosely analogous to other mainstream languages which support prototype lookup only in one narrow sense: when a member is not supplied at the most specific level, lookup may be understood as continuing through successively more general language-defined member sources. FoLang does **not** adopt complete prototype object model, mutable prototype chains, `instanceof` semantics, prototype reflection, or prototype-based `is-a` relationships.
+
+Default Backend may provide information of Prototype Object link on reflection but it is a kind of textual form like a label cannot be used for reading, traversing, updating etc.
+
 ***
 
-### Built in Packages
+### Built-in Packages
 
 | Public path | Responsibility |
 |---|---|
@@ -4700,7 +4702,7 @@ _ co.unit={
 | `co.pdap` | built-in  pragmas |
 | `co.const` | `true`, `false`, `none` |
 | `co.encoding` | base64Encode, base64Decode, json, yml, bson |
-| `co.utils` | makeImmutable, makeShared, copyOnWrite, toSnapshot — object behaviour policies |
+| `co.utils` | `makeImmutable`, `makeShared`, `copyOnWrite`, `toSnapshot` — object behavior policies |
 | `co.dynamic` | dynamic capabilities |
 | `co.runtime` | compiler-owned backend-neutral runtime-operation identifiers and semantic contracts; `co.runtime.operation.*` markers are implemented by the selected backend/runtime |
 | `co.compiletime`||
@@ -4830,4 +4832,4 @@ ordinary declaration
 
 The standalone consolidated EBNF referenced below is the normative lexical and syntactic grammar for FoLang. The prose sections of this reference define semantics and parser-validity constraints without maintaining a second embedded copy of the grammar.
 
-[{{FOLANG_EBNF}}](./grammar/folang.ebnf)
+[{{FOLANG_EBNF}}](./grammar/FoLang.ebnf)
