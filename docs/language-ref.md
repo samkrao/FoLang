@@ -2993,6 +2993,7 @@ _ co.unit = {
 ##### Returning Generic Functions
 
 **Rank-1 return**
+
 //someGen6.unit.fol
 ```folang
 _ co.unit = {
@@ -3010,6 +3011,7 @@ _ co.unit = {
 ```
 
 **Rank-2 return — returning a polymorphic function**
+
 //somGen7.unit.fol
 ```folang
 _ co.unit = {
@@ -3045,6 +3047,7 @@ _ co.unit = {
 ```
 
 **Rank-3 return**
+
 //somGen10.unit.fol
 ```folang
 _ co.unit = {
@@ -4360,7 +4363,7 @@ This restriction applies automatically to future entries added to the language-o
 
 `@co.ddap.dynamicdispatch(...)` is an **executable-application-only** semantic directive. It may be declared only in the top-level metadata preamble of the application rooted at `src/appl.fol`, in accordance with [Directive Placement](#directive-placement). It cannot appear inside any declaration or block. Using it in `src/component.fol`, in any standalone library, or in any `components/<kind>/component.fol` is a compiler error. Components are not libraries, but they are equally forbidden from enabling this application-wide semantic mode.
 
-## Applicability and Widening
+###### Applicability and Widening
 
 Dynamic multiple dispatch uses the **same applicability, nominal widening, specificity, and ambiguity rules as ordinary static overload resolution**. The difference is only the source of the selection tuple: static overload resolution uses compile-time argument types, while dynamic multiple dispatch uses actual runtime argument types.
 
