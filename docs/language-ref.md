@@ -4832,4 +4832,4 @@ ordinary declaration
 
 The standalone consolidated EBNF referenced below is the normative lexical and syntactic grammar for FoLang. The prose sections of this reference define semantics and parser-validity constraints without maintaining a second embedded copy of the grammar.
 
-[{{FOLANG_EBNF}}](./grammar/FoLang.ebnf)
+[{{FOLANG_EBNF}}](./grammar/folang.ebnf)
