@@ -605,31 +605,6 @@ co.polymorphic(...)   explicitly bound polymorphic type
 
 ***
 
-### Rules of FoLang Programs
-
-A FoLang application does not declare a `main` method. The compiler discovers the application from the project root and uses the fixed entry file:
-
-```text
-<project-root>/src/appl.fol
-```
-
-`appl.fol` may contain the entry-file constructs permitted by the application-entry grammar, including:
-
-- pragmas;
-- import directives and aliases;
-- metadata forms valid in entry-file context;
-- variable declarations and assignments;
-- expressions and calls;
-- named non-UDT type definitions/type specializations allowed by the entry grammar;
-- conditions and loops;
-- value-producing conditional selection;
-- pattern matching and destructuring;
-- comprehensions and other explicitly permitted entry expressions.
-
-`appl.fol` can therefore serve as a complete single-source application when no additional application packages are required. In a full application it remains the entry source while additional package source lives under `src/`.
-
-***
-
 ### FoLang Reserved Words and Context Sigils
 
 The hard-reserved words are:
