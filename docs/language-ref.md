@@ -428,16 +428,6 @@ identifier type [= initializer] ;
 
 `identifier` must satisfy the FoLang identifier rules. `type` may be a built-in type, a user-defined type, or a named specialization/derived type. An initializer, when present, must be assignable to the declared type.
 
-FoLang also provides declaration operators with separate semantics:
-
-```folang
-name := "SomeName";    // declare and infer one static type
-value ::= 10;          // declare a dynamic binding
-cached ?= load();      // define/infer when absent; otherwise assign compatibly
-```
-
-These operators are declaration/binding forms, not type expressions.
-
 ***
 
 Types are fundamental to every programming language. A type defines the kind of value a program can represent and the operations that are valid for that value.
