@@ -1892,6 +1892,34 @@ Shape.Point                         Shape          Point       {}
 ```
 
 ***
+### Variable declaration and initialization
+
+```folang
+intVar co.int; //isNone() true  by default it is initialized to co.const.none if a value not provided
+
+intVar1 co.int = 10; // initialized with 10
+
+intVar2 := 10 ; //defines and initialized with 10 inferred to `co.int` 
+
+intVar3 ?= 20; //defines and intialized with 20 inferred to co.int
+
+intVar3 ?=40; // sets the variable to 40 as it exists 
+
+intVar4 ::= 50; // defines initialized with 50 inferred to co.any internal type is co.int current
+
+intVar4 = "abc"; // valid
+
+intVar3 = "abc"; // compiler error
+intVar2 = "abc"; // compiler error
+intVar1 = "abc"; // compiler error
+
+intVar2 := 30; // compiler error as intVar2 already defined in scope
+
+intVar4 ::= 'c'; // Valid behaves like ?= but now value is charcter c
+
+```
+
+***
 
 ### Symbols
 
