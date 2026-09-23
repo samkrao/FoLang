@@ -440,9 +440,15 @@ These operators are declaration/binding forms, not type expressions.
 
 ***
 
+Types are fundamental to every programming language. A type defines the kind of value a program can represent and the operations that are valid for that value.
+
+Variables and other bindings associate names with values, and each value participates in the type system according to its declared, inferred, or runtime type.
+
+FoLang likewise has a rich type system, described in the following sections.
+
 ### Types
 
-For reference organization, FoLang types are grouped into four broad families:
+FoLang types are grouped into four broad families:
 
 1. built-in data types;
 2. built-in collection/protocol types;
