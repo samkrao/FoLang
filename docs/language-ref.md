@@ -1322,12 +1322,24 @@ ZeroLengthArray   co.type = co.int->([0]);
 ZeroDimArray      co.type = co.int->([.]);
 JaggedArray       co.type = co.int->([][]);
 VariableLenArray  co.type = co.int->([...]);
+VariableRankarray co.type = co.int->([*]);  //variable rank + variable extents
 
 IntPtr     co.type = co.int->(*);
 IntDblPtr  co.type = co.int->(**);
 IntDeepPtr co.type = co.int->(*****);
 
 IntRange co.type = co.int->(..);
+```
+
+> Variable Rank + Variable Extents Arrays and their use
+
+```folang
+Tensor co.type = co.float->([*]);
+
+MatrixOrTensor co.refinementType =
+    (Tensor).where(
+        _.rank >= 2 && _.rank <= 4
+    );
 ```
 
 The arrow-tail syntax is part of the type expression. A variable subsequently uses the named derived type rather than repeating the derivation inline.
