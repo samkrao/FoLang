@@ -4658,7 +4658,197 @@ _ co.unit={
 
 > Their ordinary construction/use continues to follow the anonymous-class rules independently of the lifecycle facility.
 
+#### Dependent Type Index Rules
 
+An **index** is an argument to a dependent type, such as the `n` in
+`Vector(n)`, or a dimension in an array derivation, such as the `n` in
+`co.int->([n])`. Both positions obey the same rules.
+
+Examples in this section use the following dependent `co.type` family.
+Because `N` occurs in the array-dimension position of the RHS, the compiler
+classifies it as a value/index parameter:
+
+```folang
+Buffer(N) co.type =
+    co.dependentType(co.int->([N]));
+```
+
+##### An index is a literal or a name
+
+An index is an integer literal or a name. Arithmetic, function calls, indexing
+and every other operator are rejected.
+// someIdxEG1.unit.fol
+```folang
+_ co.unit = {
+    Buffer(N) co.type = co.dependentType(co.int->([N]));
+
+    someFun()->()={
+        @co.dap.const SIZE co.int = 1024;
+
+        v Vector(3);                    // ✅ literal
+        v Vector(SIZE);                 // ✅ @co.dap.const name
+        buf Buffer(SIZE);               // ✅ named array type with the same index rule
+
+        v Vector(n + 1);                // ❌ arithmetic is not permitted in an index
+        v Vector(computeSize());        // ❌ a call is not permitted in an index
+        buf Buffer(n * 2);               // ❌ same rule for array sizes
+    }
+}
+```
+
+This restriction applies only to the **size** of an array, never to element
+access. Indexing an array is an ordinary expression and arithmetic is fine.
+
+```folang
+buf Buffer(SIZE);               // dependent type application; size is restricted
+buf[i + 1] = 42;                // access — unrestricted
+buf[compute(x)] = 7;            // access — unrestricted
+```
+
+##### What a named index may resolve to
+
+A name used as an index resolves in exactly one of two ways.
+
+**A parameter bound by the enclosing type declaration or callable
+signature.** In a dependent type declaration, the declaration head introduces
+the name and the RHS determines its role. In a callable signature, an ordinary
+value parameter may be reused as an index, and an otherwise-unbound symbolic
+index appearing consistently in dependent type positions is bound by that
+signature according to the dependent family's declared parameter domain.
+//someEG2.unit.fol
+```folang
+_ co.unit = {
+    // n is declared here; [n] classifies it as a value/index parameter.
+    Vector(n) co.type =
+        co.dependentType(co.int->([n]));
+
+    // n is a symbolic dependent index shared by both parameter types.
+    dotProduct(a Vector(n), b Vector(n))->(co.int) = {
+        // ...
+    }
+
+    // n is an ordinary value parameter and is reused in the return type.
+    readVector(n co.int)->(Vector(n)) = {
+        // ...
+    }
+}
+```
+
+**A `@co.dap.const` compile-time constant.** Outside a signature that binds it,
+a name has nothing to bind to, so it must be a constant the compiler can
+substitute.
+
+```folang
+_ co.object->(for=VectorClient) = {
+    @co.dap.const SIZE co.int = 1024;
+
+    allocate()->() = {
+        buf Buffer(SIZE); // ✅ SIZE substitutes to 1024
+        v Vector(SIZE);   // ✅ same rule for dependent types
+    }
+}
+```
+
+Nothing else qualifies. `@co.dap.final` marks an immutable binding, and an
+immutable value need not be known while compiling, so it cannot be substituted.
+
+```folang
+_ co.object->(for=VectorClient) = {
+    @co.dap.final n co.int = readInput();
+
+    invalidIndices()->() = {
+        bad Vector(n);           // ❌ immutable, but not known at compile time
+
+        m co.int = 10;
+        alsoBad Vector(m);       // ❌ an ordinary variable is not an index
+    }
+}
+```
+
+So in a plain variable declaration, where no signature is binding anything, the
+only legal names are `@co.dap.const` constants.
+
+##### An index is non-negative
+
+Zero is permitted; a negative index is not.
+
+```folang
+empty Buffer(0);                // ✅ zero-length array
+
+buf Buffer(-1);                 // ❌ rejected while parsing
+v Vector(-1);                   // ❌ rejected while parsing
+
+_ co.object->(for=VectorClient) = {
+    @co.dap.const OFFSET co.int = -1;
+
+    invalidOffset()->() = {
+        buf Buffer(OFFSET); // ❌ rejected after substitution
+    }
+}
+```
+
+A negative literal cannot be written at all, because no prefix operator is
+reachable in an index position. A negative constant is rejected when the
+compiler substitutes it. Both are compile-time errors.
+
+##### When two dependent types are equal
+
+Two dependent types are equal when their constructors are the same and their
+indices are pairwise equal. An index comparison has exactly three cases.
+
+| Index form | Compared by |
+|---|---|
+| integer literal | value |
+| `@co.dap.const` name | substituted literal value |
+| parameter | name identity |
+
+```folang
+Vector(3)    vs Vector(3)       // equal
+Vector(n)    vs Vector(n)       // equal
+Vector(n)    vs Vector(m)       // NOT equal — rejected
+Vector(SIZE) vs Vector(1024)    // equal when @co.dap.const SIZE = 1024
+```
+
+Rejecting `Vector(n)` against `Vector(m)` is the point of the feature. It is
+what lets the compiler catch a size mismatch without the developer writing a
+single check.
+
+##### What FoLang deliberately does not do
+
+FoLang does not decide index equality up to arithmetic. `Vector(n+1)` and
+`Vector(1+n)` are not merely unequal — they cannot be written.
+
+Accepting them would require symbolic reasoning, and there is no partial
+version of it. Once `n+1 == 1+n` is accepted, the next reasonable request is
+`2*n == n+n`, and the type checker becomes a theorem prover by accretion. That
+is the complexity FoLang is built to avoid.
+
+The cost is narrow. Length-arithmetic signatures such as
+`concat(Vector(n), Vector(m)) -> Vector(n+m)` are out of scope; return a
+dynamically sized type and check at run time instead. Everything that needs
+only same-parameter identity still works, and that covers the common cases.
+
+```folang
+multiply(a Matrix(r, n), b Matrix(n, c)) -> (Matrix(r, c))
+dotProduct(a Vector(n), b Vector(n))     -> (co.int)
+zip(a Vector(n), b Vector(n))            -> (Vector(n))
+```
+
+Matrix multiplication, the usual demonstration of dependent types, needs only
+that the shared `n` matches.
+
+##### Dependent types are checked, never inferred
+
+Every dependent type application appears explicitly in a written declaration or
+signature. FoLang never infers an omitted dependent type or an omitted index
+value. The parameter-role classification performed while resolving a defining
+`co.type` RHS is not dependent-type inference; it only classifies names already
+written in that declaration head.
+
+This keeps checking decidable without a constraint solver and avoids
+Hindley-Milner-style whole-program inference of value indices. Inferring a
+dependent type at a use site would require inferring the index **value**, not
+merely an ordinary static type.
 
 #### Conceptual Prototype Delegation for Non-Class Object Kinds
 
