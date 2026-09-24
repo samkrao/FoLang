@@ -1902,6 +1902,16 @@ intVar4 ::= 'c'; // valid under the dynamic-binding rules; current value is char
 
 ```
 
+###### Lazy calls
+
+```folang
+
+@co.dap.lazy
+x := someFun(10);
+
+```
+What lazy does is, it will not invoke someFun immediately, it will invoke only on first time accessing the variable x.
+
 ***
 
 ### Symbols
@@ -2615,7 +2625,12 @@ A unit is a stateless source container. A package may contain any number of ordi
 
 #### Companion Units
 
+Companion units name start with struct name `structname.comp.unit.fol` unlike normal units name which can be anything `xxxx.unit.fol`. Compiler will throw error if the `structname.fol` not availabe in that package and it is not having top level declaration with `co.struct`.
+
 #### Normal Units
+
+The constructs under Normal units are addressed with package name as they are merged into the same package and any confilicts will be compiler error.
+Name of normal unit fols can be anything as name of unit doesn't matter at the end they belong to `package`.
 
 ### Generics and Specializations
 
