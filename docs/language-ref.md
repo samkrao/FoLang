@@ -556,7 +556,9 @@ Derived types are named through `co.type` declarations before ordinary variable 
 | `co.block` | Language block kind where block-kind values/AST classification are required. |
 | `co.kind` | Kind-level declaration/value facility, primarily for metaprogramming and AST/kind classification. |
 | `co.signature` | Structural module/signature contract declaration kind. |
-| `co.function` | Function/callable declaration kind used by the callable model. |
+| `co.function` | Function declaration kind used by the callable model. |
+| `co.callable` | callable declaration kind used by the callable model. |
+| `co.bouundcallable`| callable produced after `bind` with parameter values on function.|
 | `co.enum` | Closed tagged ADT declaration. Parameterized states are compiler-provided state functions returning the enclosing enum type; zero-parameter states are state values. |
 | `co.symbol` | Language/compiler symbol representation used by AST/compiler-facing facilities. |
 | `co.component` | Structural component/surface declaration valid in component surface files and standardized component locations. |
@@ -1911,6 +1913,19 @@ x := someFun(10);
 
 ```
 What lazy does is, it will not invoke someFun immediately, it will invoke only on first time accessing the variable x.
+
+###### BoundCallables
+
+```folang
+add(a co.int, b co.int)->(co.int)={
+    $=> a + b;
+}
+
+x co.boundcallable = add.bind(10,30);
+
+z := x.invoke(); //actual call happens here
+
+```
 
 ***
 
