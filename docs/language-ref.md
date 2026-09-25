@@ -1805,7 +1805,7 @@ A named block is a reusable named block value that can be expanded according to 
 
 #### Anonymous Blocks
 
-An ordinary anonymous block is a lexical execution scope:
+An ordinary anonymous block is a lexical execution scope. It can access bindings visible in its enclosing lexical scope and introduces a child lexical scope for declarations made within it:
 
 ```folang
 {
@@ -1890,7 +1890,7 @@ intVar3 ?= 20; // defines and initializes with 20, inferred as co.int
 
 intVar3 ?=40; // sets the variable to 40 as it exists 
 
-intVar4 ::= 50; // defines initialized with 50 inferred to co.any internal type is co.int current
+intVar4 ::= 50; // defines a dynamic variable backed by co.any; current value is co.int
 
 intVar4 = "abc"; // valid
 
@@ -1900,9 +1900,11 @@ intVar1 = "abc"; // compiler error
 
 intVar2 := 30; // compiler error as intVar2 already defined in scope
 
-intVar4 ::= 'c'; // valid under the dynamic-binding rules; current value is character 'c'
+intVar4 ::= 'c'; // valid for a dynamic variable; current value is character 'c'
 
 ```
+
+A variable declared with `::=` is a dynamic variable represented by `co.any`. It may hold values of different concrete types during its lifetime while ordinary lexical scope and name-resolution rules still apply.
 
 ###### Lazy calls
 
@@ -2239,11 +2241,7 @@ FoLang deferred functions are registered for execution when the enclosing functi
 
 #### Function Scopes
 
-FoLang defines three function-scope modes:
-
-    1. @co.dap.dynamicscope
-    2. @co.dap.mixedscope
-    3. lexical scope — the default when neither scope annotation is present.
+FoLang uses lexical scope for function name resolution. Functions and nested callable forms resolve enclosing bindings from their definition site; FoLang does not define a dynamic-scope mode.
 
 
 #### Function Chaining
@@ -2537,6 +2535,8 @@ The lambda must be a direct argument of the allowed collection call. That call
 may itself be nested, for example `consume(nums.map(|x| => x*x))`; the enclosing
 call does not make the lambda an argument of `consume`.
 
+Lambda expressions use lexical scope. They may reference bindings visible at their definition site, which are captured when required by the lambda's lifetime.
+
 ***
 
 ### Conditions, Loops, and Ternary Operations
@@ -2544,6 +2544,8 @@ call does not make the lambda an argument of `consume`.
 #### Conditions
 
 `then` is the one-shot conditional branch verb. Its argument may be a block or an ordinary value/expression. `when(condition)` introduces each additional Boolean condition and must be followed by `.then(...)`. `default(result)` is the optional terminal fallback and may likewise receive a block or value. The same `then` / `when(condition)` / `default` chain is used for statement-style conditional execution and value-producing ternary selection.
+
+A block supplied to a conditional branch follows the ordinary anonymous-block lexical-scope rules.
 
 ```text
 (boolean truth).then({
@@ -4227,7 +4229,7 @@ The entries in this language-defined inventory form the current built-in metadat
 |---|---|---|
 |`PRAGMA`|"@co.pdap.threadpool","@co.pdap.schedularpool"||
 |`DIRECTIVE`|"@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use",  "@co.ddap.alias","@co.ddap.dynamicdispatch","@co.ddap.overload"|`@co.ddap.overload` is different from `@co.dap.overload` it has takes whether `paramtypes` or `paramandreturntypes` as attributevalue of `strategy`|
-|`ANNOTATION`| "@co.dap.extend","@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override","@co.dap.implement", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.dynamicscope","@co.dap.mixedscope", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.compose", "@co.dap.guard","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.implementation","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize","@co.dap.symbol"|//mop => meta object programming|
+|`ANNOTATION`| "@co.dap.extend","@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override","@co.dap.implement", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.compose", "@co.dap.guard","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.implementation","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize","@co.dap.scope","@co.dap.symbol"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.dap.effects", "@co.dap.onEffect", "@co.dap.defer","@co.dap.callable", "@co.dap.executionmodel"||
 
 ***
