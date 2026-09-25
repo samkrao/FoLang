@@ -2243,6 +2243,10 @@ FoLang deferred functions are registered for execution when the enclosing functi
 
 FoLang uses lexical scope for function name resolution. Functions and nested callable forms resolve enclosing bindings from their definition site; FoLang does not define a dynamic-scope mode.
 
+#### Explicit Calling Context
+
+`@co.dap.with(context=ctx)` on a callable invocation explicitly exposes the caller's current Context to that invocation under `ctx`. Inside the called function, `ctx.name` accesses caller bindings; the callee's own `$` Context remains unchanged and ordinary unqualified lookup remains lexical.
+
 
 #### Function Chaining
 
