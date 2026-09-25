@@ -2,10 +2,6 @@ _ co.lang.component = {
     
     @co.dap.export( packages=
         { 
-            forall={recurse=true},
-            for{recurse=true} ,
-            let={recurse=true},
-            self={recurse=true},
             this={recurse=true},
             fΦλ.lang={recurse=true},
             fΦλ.net={recurse=true},
