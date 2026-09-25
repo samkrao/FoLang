@@ -165,7 +165,7 @@ const (
 	Matrix                       = "co.Matrix"
 )
 
-// ValueList co.type = co.List(co.lang.int);
+// ValueList co.type = co.List(co.int);
 // co.List, co.Set, co.Map,  co.Tuple, co.
 type PredefinedCollections struct {
 	AbstractType
@@ -180,7 +180,7 @@ func (s PredefinedCollections) Kind() string {
 	return string(s.Kind_)
 }
 
-// x co.type = co.lang.int;
+// x co.type = co.int;
 type AliasType struct {
 	AbstractType
 }
@@ -189,7 +189,7 @@ func (s AliasType) IsType() bool {
 	return true
 }
 
-// x co.newtype =  co.lang.int;
+// x co.newtype =  co.int;
 type NewType struct {
 	AbstractType
 }
@@ -842,6 +842,17 @@ func (s DeferredFunctionSymbol) FunctionShape() string {
 	return "deferred_function"
 }
 
+// someFun(a co.int, b co.int)->(co.int)={}
+// k :=  someFun.bind(10, 20);
+// res := k.invoke()
+type BindCallableSymbol struct {
+	FunctionSymbol
+}
+
+func (s BindCallableSymbol) FunctionShape() string {
+	return "BindCallable_Signature"
+}
+
 // ff( x ..co.int)->()={}
 type VariadicFunctionSymbol struct {
 	FunctionSymbol
@@ -956,6 +967,26 @@ func (s AssociatedFunction) FunctionShape() string {
 	return "Associated_Function"
 }
 
+// add(a co.int, b co.int)->(co.int)={}
+// x co.function = ()->(){}
+// x co.function = add;
+
+type FunctionObject struct {
+	FunctionSymbol
+}
+
+func (s FunctionObject) Kind() string {
+	return "Function Object"
+}
+
+type Callable struct {
+	FunctionSymbol
+}
+
+func (s Callable) Kind() string {
+	return "Callable"
+}
+
 type IIdentifier interface {
 	IdentifierType() string
 }
@@ -1029,12 +1060,12 @@ func (a PDADSymbol) Kind() string {
 }
 
 // result := (x <- IntList{1,2,3}).yield(x * 2);
-type ForExprSymbol struct {
+type ComprehensionSymbol struct {
 	SymbolDetails
 }
 
-func (a ForExprSymbol) Kind() string {
-	return "ForExpr"
+func (a ComprehensionSymbol) Kind() string {
+	return "ComprehensionSymbol"
 }
 
 // println(...)
@@ -1108,7 +1139,7 @@ func (s FΦλProperties) Kind() string {
 	return "FΦλ_property"
 }
 
-// this ->>
+// $->>
 type ContinueSymbol struct {
 	SymbolDetails
 }
@@ -1117,7 +1148,7 @@ func (s ContinueSymbol) Kind() string {
 	return "continue"
 }
 
-// this => <value(s)>
+// $=> <value(s)>
 type ReturnSymbol struct {
 	SymbolDetails
 }
@@ -1126,7 +1157,7 @@ func (s ReturnSymbol) Kind() string {
 	return "Return"
 }
 
-// this ->|
+// $->|
 type BreakSymbol struct {
 	SymbolDetails
 }
@@ -1135,7 +1166,7 @@ func (s BreakSymbol) Kind() string {
 	return "Break"
 }
 
-// this ^=> <values>
+// $^=> <values>
 type ReturnEscapeSymbol struct {
 	SymbolDetails
 }
