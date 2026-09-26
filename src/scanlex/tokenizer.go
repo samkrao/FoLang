@@ -159,17 +159,27 @@ func foldTokens(lex *lexer) []Token {
 			if (Token_.Kind == KEYWORD || Token_.Kind == RESERVEDWORD || Token_.Kind == CONTEXT_KEYWORD) &&
 				lex.lookAhead(1).Kind == DOT && slices.Contains(UnsupportedObjects, Token_.Value) {
 				if _, hasKeywordMethods := KeyWords_me[Token_.Value]; hasKeywordMethods {
-					part := lex.lookAhead(2)
 					unknown := Token_
 					unknown.Kind = UNKNOWN
-					unknown.Value += "." + part.Value
-					if part.EndPos != nil {
-						unknown.EndPos = part.EndPos.Copy()
+					consumed := 0
+					for lex.lookAhead(consumed+1).Kind == DOT {
+						part := lex.lookAhead(consumed + 2)
+						if part.Kind != IDENTIFIER && part.Kind != KEYWORD && part.Kind != RESERVEDWORD &&
+							part.Kind != CONTEXT_KEYWORD && part.Kind != BUILT_IN_METHOD {
+							break
+						}
+						unknown.Value += "." + part.Value
+						if part.EndPos != nil {
+							unknown.EndPos = part.EndPos.Copy()
+						}
+						consumed += 2
 					}
-					nTokens = append(nTokens, unknown)
-					lex.currentPos += 2
-					lex.moveNext()
-					continue
+					if consumed > 0 {
+						nTokens = append(nTokens, unknown)
+						lex.currentPos += consumed
+						lex.moveNext()
+						continue
+					}
 				}
 			}
 
@@ -194,10 +204,11 @@ func foldTokens(lex *lexer) []Token {
 
 		}
 
-		if changed && thisCallChainNeedsSeparation(lstTokens, tempToken, lex.lookAhead(1).Kind == OPEN_PAREN) {
-			// `this` and `self` remain self-reference primaries when they are call
-			// receivers. Their special return-statement spellings stay folded.
-			nTokens = appendSeparatedMemberChain(nTokens, lstTokens, true)
+		if invoked := lex.lookAhead(1).Kind == OPEN_PAREN; changed && reservedReceiverChainNeedsSeparation(lstTokens, tempToken) {
+			// Hard-reserved roots remain visible as primaries for both field access
+			// and invocation. They must never be lowered into an ordinary composite
+			// identifier merely because a member follows them.
+			nTokens = appendSeparatedMemberChain(nTokens, lstTokens, invoked)
 		} else if changed && dottedChainFollowsCompletedExpression(lex, len(lstTokens)) {
 			// A chain after a completed receiver is postfix structure, not a
 			// qualified name. Preserve every source dot so
@@ -205,13 +216,14 @@ func foldTokens(lex *lexer) []Token {
 			nTokens = appendSeparatedMemberChain(nTokens, lstTokens, lex.lookAhead(1).Kind == OPEN_PAREN)
 		} else if changed {
 			dirTok := tempToken
-			//dirTok = strings.TrimPrefix(dirTok, "@")
 			if _, ok := Built_in_directives(dirTok); ok && strings.HasPrefix(tempToken, "@") {
-				nTokens = append(nTokens, newUniqueToken(BUILT_IN_DIRECTIVES, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
+				nTokens = append(nTokens, newUniqueToken(BUILT_IN_DIRECTIVES, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+			} else if IsLanguageOwnedMetadataName(tempToken) {
+				nTokens = append(nTokens, newUniqueToken(UNKNOWN, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 			} else if strings.HasPrefix(tempToken, "@") {
-				nTokens = append(nTokens, newUniqueToken(CUSTOM_DIRECTIVES, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
+				nTokens = append(nTokens, newUniqueToken(CUSTOM_DIRECTIVES, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 
-			} else if tempToken == "co.lang.operator" {
+			} else if tempToken == "co.operator" {
 				nTokens = append(nTokens, newUniqueToken(OPERATOR_SOURCE_KIND, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 			} else if _, ok := Operator_source_constants[tempToken]; ok {
 				// A co.operator.* property value belongs to the operator-source
@@ -314,7 +326,9 @@ func foldTokens(lex *lexer) []Token {
 						nTokens = append(nTokens, newUniqueToken(BUILT_IN_METHOD, lastToken, lstTokens[len(lstTokens)-1].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 					}
 				} else {
-					if length > 1 {
+					if separated, ok := appendLongestBuiltInQualifiedName(nTokens, lstTokens); ok {
+						nTokens = separated
+					} else if length > 1 {
 						tempToken = strings.ReplaceAll(tempToken, ".", "_fo.")
 						nTokens = append(nTokens, newUniqueToken(COMPOSITE_IDENTIFER, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 					} else {
@@ -454,6 +468,21 @@ func appendLongestBuiltInReceiver(out []Token, gathered []Token) ([]Token, bool)
 	return out, false
 }
 
+// appendLongestBuiltInQualifiedName preserves a registered co.* receiver while
+// leaving a non-call final member visible to ordinary name resolution. This is
+// important for standard-package API evolution: the lexer owns the package/type
+// prefix, not a closed list of every declaration that package may export.
+func appendLongestBuiltInQualifiedName(out []Token, gathered []Token) ([]Token, bool) {
+	separated, ok := appendLongestBuiltInReceiver(out, gathered)
+	if !ok || len(gathered) < 3 {
+		return out, false
+	}
+	dot := gathered[len(gathered)-2]
+	separated = append(separated, newUniqueToken(DOT, ".", dot.StartPos.Copy(), dot.EndPos.Copy()))
+	separated = append(separated, normalizedMemberToken(gathered[len(gathered)-1]))
+	return separated, true
+}
+
 // normalizedMemberToken applies identifier lowering to an individual member
 // without changing contextual keyword kinds.
 func normalizedMemberToken(segment Token) Token {
@@ -478,14 +507,14 @@ func dottedChainFollowsCompletedExpression(lex *lexer, consumed int) bool {
 	}
 }
 
-// thisCallChainNeedsSeparation keeps the hard-reserved receiver visible to the parser. The
-// return forms are statements whose established token contract is one folded
-// BUIL_IN_STMT_EXPRS token, despite the following parenthesized return value.
-func thisCallChainNeedsSeparation(gathered []Token, fullName string, invoked bool) bool {
-	if !invoked || len(gathered) == 0 || isSpecialBuiltin(fullName) {
+// reservedReceiverChainNeedsSeparation keeps hard-reserved receiver roots visible
+// to the parser. `this.member` is ordinary member syntax, while fΦλ is the
+// private standard-package root; neither spelling may be identifier-lowered.
+func reservedReceiverChainNeedsSeparation(gathered []Token, fullName string) bool {
+	if len(gathered) == 0 || isSpecialBuiltin(fullName) {
 		return false
 	}
-	return gathered[0].Value == "this"
+	return gathered[0].Value == "this" || gathered[0].Value == "fΦλ"
 }
 
 // appendSeparatedMemberChain emits the gathered identifier/dot pairs without
@@ -516,32 +545,20 @@ func appendSeparatedMemberChain(out []Token, gathered []Token, invoked bool) []T
 }
 
 func checkBuiltInStExmet(Token_ Token, tempToken string, lastToken string) bool {
-	tks := strings.Split(tempToken, ".")
-	otherFlag := false
-	first := true
-
-	nTk := Token_.Value
-	for _, stk := range tks {
-		if stmts, ok := Built_in_stmt_exprs[nTk]; ok {
-
-			if first {
-				first = false
-				continue
-
-			}
-			if stk == lastToken {
-				break
-			} else if !slices.Contains(stmts, stk) {
-				otherFlag = true
-				break
-			}
-		} else {
-			otherFlag = true
-			break
-		}
-
+	parts := strings.Split(tempToken, ".")
+	if len(parts) < 2 || parts[0] != Token_.Value || parts[len(parts)-1] != lastToken {
+		return true
 	}
-	return otherFlag
+
+	prefix := parts[0]
+	for _, part := range parts[1:] {
+		members, ok := Built_in_stmt_exprs[prefix]
+		if !ok || !slices.Contains(members, part) {
+			return true
+		}
+		prefix += "." + part
+	}
+	return false
 }
 func (lex *lexer) advanceN(n int) {
 	lex.pos += n

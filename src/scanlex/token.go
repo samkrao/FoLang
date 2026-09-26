@@ -159,7 +159,7 @@ const (
 	// metadata (for example *** as pointer degree); otherwise the parser rejects
 	// the whole run without fallback splitting (DECISION-LEX-003).
 	SYMBOLIC_RUN //110
-	// OPERATOR_SOURCE_KIND preserves co.lang.operator for the dedicated
+	// OPERATOR_SOURCE_KIND preserves co.operator for the dedicated
 	// operator-source grammar without admitting it as an ordinary BUILT_IN_KIND.
 	OPERATOR_SOURCE_KIND //111
 	// OPERATOR_SOURCE_CONSTANT preserves a co.operator.* property value for the
@@ -190,9 +190,8 @@ const (
 	LIFECYCLE_MARKER //114
 
 	BUILT_IN_COLLECTIONS //115
-	// CARET_EQGT is the structural ^=> marker used only by the complete
-	// `this ^=> values;` enclosing-callable return statement. It is not an
-	// expression operator and cannot be overloaded.
+	// CARET_EQGT is retained as a numeric compatibility value. The ^=> spelling
+	// is not part of the current language and is never emitted by the lexer.
 	CARET_EQGT //116
 	ARROW_PIPE //117
 	EQ_GT      //118
@@ -221,50 +220,41 @@ var Built_in_constants map[string]string = map[string]string{
 // is once again nothing but an ordinary identifier and can never collide with
 // one.
 //
-// The set is closed and comes from operator-fixity, operator-associativity and
-// operator-arity. A fixity the alpha profile has not implemented is still listed
-// here, because the parser must recognize the spelling in order to report it as
-// reserved rather than as unknown.
+// The set is closed and comes from the current operator parse table and operator
+// declaration examples. Removed future fixities are deliberately absent: the
+// 1.0 reference says a spelling is not implicitly reserved merely because an
+// older design or derived grammar mentioned it.
 var Operator_source_constants map[string]string = map[string]string{
-	"co.operator.fixity.infix":         "infix",
-	"co.operator.fixity.postfix":       "postfix",
-	"co.operator.fixity.prefix":        "prefix",
-	"co.operator.fixity.circumfix":     "circumfix",
-	"co.operator.fixity.postcircumfix": "postcircumfix",
-	"co.operator.fixity.precircumfix":  "precircumfix",
-	"co.operator.fixity.mixfix":        "mixfix",
-	"co.operator.fixity.ternary":       "ternary",
-	"co.operator.fixity.distfix":       "distfix",
-	"co.operator.associativity.left":   "left",
-	"co.operator.associativity.right":  "right",
-	"co.operator.associativity.none":   "none",
-	"co.operator.arity.unary":          "unary",
-	"co.operator.arity.binary":         "binary",
-	"co.operator.arity.ternary":        "ternary",
+	"co.operator.fixity.infix":        "infix",
+	"co.operator.fixity.postfix":      "postfix",
+	"co.operator.fixity.prefix":       "prefix",
+	"co.operator.associativity.left":  "left",
+	"co.operator.associativity.right": "right",
+	"co.operator.associativity.none":  "none",
+	"co.operator.arity.unary":         "unary",
+	"co.operator.arity.binary":        "binary",
 }
 
 // Reserved_lu maps reserved language keywords to their TokenKind.
 var Reserved_lu map[string]TokenKind = map[string]TokenKind{
 	"co":   KEYWORD,      // holds everything
 	"this": KEYWORD,      // refers this/self
-	"for":  KEYWORD,      // for comprehensions and for.all
-	"let":  KEYWORD,      //let bindings and let recursions
 	"fΦλ":  RESERVEDWORD, // fo-lang reserved word
 }
 
-// UnsupportedObjects lists keywords whose dotted forms must remain visible to
-// the parser as one UNKNOWN lexeme instead of being folded as identifiers.
-var UnsupportedObjects = []string{"let"}
+// UnsupportedObjects lists reserved spellings whose dotted forms must remain
+// visible to the parser as one UNKNOWN lexeme instead of being folded. The
+// current reference defines no such spelling.
+var UnsupportedObjects = []string{}
 
-// KeyWords_me maps each keyword to its valid dot-accessible sub-identifiers.
-// Compiler-owned `this` selectors use `this->name` and are parsed contextually;
-// keeping this list empty prevents their legacy dotted spellings from folding.
+// KeyWords_me maps each keyword to its language-owned qualified roots. `this`
+// member access and fΦλ private-package access remain ordinary dotted syntax;
+// keeping their lists empty prevents those chains from being collapsed into a
+// built-in token.
 var KeyWords_me map[string][]string = map[string][]string{
-	"let":  {"where"},
-	"co":   {"dynamic", "macro", "hokrlt", "encoding", "net", "crypto", "lang", "dap", "ddap", "pdap", "out", "const", "native", "meta", "core", "sys", "os", "in", "pattern", "control", "runtime", "compiletime", "cpca", "utils", "operator"},
-	"this": {"object", "class", "module", "kind", "type", "struct", "instance", "callee", "args", "params", "results", "associatedtype", "owner", "caller", "callee", "fallthrough", "yield", "builtins"},
+	"co":   {"http", "tcp", "udp", "sys", "os", "meta", "native", "in", "out", "regex", "crypto", "dap", "ddap", "pdap", "const", "encoding", "utils", "dynamic", "runtime", "compiletime", "macro", "pattern", "control", "cpca", "hokrlt", "operator", "hw", "stex"},
+	"this": {},
 	"fΦλ":  {},
-	"for":  {},
 }
 
 // Reserved_me lists method and keyword names reserved for built-in object operations.
@@ -286,13 +276,16 @@ var Special_methods []string = []string{
 
 // Built_in_stmt_exprs maps namespace prefixes to their valid sub-methods and statement expressions.
 var Built_in_stmt_exprs map[string][]string = map[string][]string{
-	"co.native": {"load", "register", "asm", "inline", "emit", "ffi"},
+	"co.native": {"load", "register", "asm", "inline", "emit", "ffi", "spawnon", "arch"},
 	//## turbo pascal like machine code (__asm(".byte ....."))
 	////#pascal emit($5B/$59/$0E/$E8/$00/$00/$58/$05/$08/$00/$50/$51/$53/$CB); to
 	// //# c  asm (".byte 0x5B, 0x59, 0x0E, 0xE8, 0x00, 0x00, 0x58, 0x05, 0x08, 0x00, 0x50, 0x51, 0x53, 0xCB\n\t")
 	"co":         KeyWords_me["co"],
 	"co.dynamic": {},
-	"co.meta":    {"ast", "instrument", "transform", "augment", "reflect", "introspect", "patch", "inject", "create", "runtime"},
+	"co.http":    {},
+	"co.tcp":     {},
+	"co.udp":     {},
+	"co.meta":    {"ast", "instrument", "transform", "augment", "reflect", "introspect", "patch", "inject", "create", "runtime", "realm"},
 	/*
 			     patch      :  For patching exiting types, methods/functions, blocks etc
 		         instrument :  Add observability/monitoring hooks
@@ -310,131 +303,64 @@ var Built_in_stmt_exprs map[string][]string = map[string][]string{
 	"co.compiletime": {},
 	"co.hokrlt":      {},
 	"co.cpca":        {},
-	"co.utils":       {},
-	// Capitalized per the reference's co.core row: the member is co.core.List, not co.core.list.
-	"co.core":     {"List", "Set", "Map", "Tree", "Trie", "Tuple", "Comparable", "Sort", "Search", "Array", "Pointer", "Ref", "Address", "Ptr", "Matrix", "Word"},
-	"co.lang":     {},
-	"co.sys":      {"file", "concurrent", "parallel", "goto", "event", "invoke", "bind", "call", "apply", "settimeout", "setinterval", "schedular", "cron", "event", "random", "timer", "date", "time"},
-	"co.os":       {"signal", "cmd", "execute", "run", "env", "getenv", "setenv", "unsetenv", "sleep", "exit", "cwd", "chdir", "fork", "wait", "pipe", "dup", "dup2", "close", "readfd", "writefd", "random"},
-	"co.out":      {"println", "printsp", "print", "echo"},
-	"co.in":       {"read", " readln", "input"},
-	"co.sys.file": {"write", "read", "open", "close", "append", "delete", "copy", "move", "exists"},
-	"co.encoding": {"json", "bson", "base64encode", "base64decode", "yml"},
-	"co.dap":      {},
-	"co.crypto":   {"hash", "md5", "aes", "rsa", "ssl", "tls", "uuid", "rand"},
-	"co.ddap":     {},
-	"co.pdap":     {},
-	"co.regex":    {},
-	"co.net":      {"tcp", "udp", "http"},
-	"co.const":    {"true", "false", "none"},
-	"co.pattern":  {"match", "case", "default", "regex", "stex", "Type", "Value", "Shape", "Object", "Instance", "Any"},
-	"co.control":  {"do", "if", "else", "otherwise", "default", "return", "shift", "resume"},
-	"co.macro":    {"quote", "esc", "gensym", "unquote"},
+	"co.utils":       {"makeImmutable", "makeShared", "copyOnWrite", "toSnapshot"},
+	"co.sys":         {"file", "concurrent", "parallel", "goto", "invoke", "bind", "call", "apply", "settimeout", "setinterval", "scheduler", "cron", "event"},
+	"co.os":          {"signal", "cmd", "execute", "run", "env", "getenv", "setenv", "sleep", "exit", "cwd", "chdir", "fork", "wait", "pipe", "dup", "dup2", "close", "readfd", "writefd", "random"},
+	"co.out":         {"println", "print"},
+	"co.in":          {"read", "readln"},
+	"co.sys.file":    {},
+	"co.encoding":    {"base64Encode", "base64Decode", "json", "yml", "bson"},
+	"co.dap":         {},
+	"co.crypto":      {"hash", "md5", "aes", "rsa", "ssl", "tls", "uuid", "rand"},
+	"co.ddap":        {},
+	"co.pdap":        {},
+	"co.regex":       {"pattern", "match", "search"},
+	"co.const":       {"true", "false", "none"},
+	"co.pattern":     {},
+	"co.control":     {},
+	"co.macro":       {},
 	// The co.operator namespace supplies the qualified operator property values
 	// of DECISION-OPDECL-006. The leaf spellings must match operator-fixity,
 	// operator-associativity and operator-arity exactly; see
 	// Operator_source_constants, which is the authority the folder consults.
-	"co.hw":                     {},
+	"co.hw":                     {"cpu", "memory"},
 	"co.stex":                   {},
 	"co.operator":               {"arity", "fixity", "associativity"},
-	"co.operator.fixity":        {"prefix", "infix", "postfix", "circumfix", "postcircumfix", "precircumfix", "mixfix", "ternary", "distfix"},
-	"co.operator.arity":         {"unary", "binary", "ternary"},
+	"co.operator.fixity":        {"prefix", "infix", "postfix"},
+	"co.operator.arity":         {"unary", "binary"},
 	"co.operator.associativity": {"left", "right", "none"},
 }
 
-// Builtin_types lists the recognized built-in data type identifiers (co.lang.int, co.lang.string, etc.).
+// Builtin_types lists the direct co.* built-in data types and type constructors
+// defined by the current language reference.
 var Builtin_types []string = []string{
-	"co.lang.string",
-	"co.lang.int",
-	"co.lang.bit",
-	"co.lang.double",
-	"co.lang.float",
-	"co.lang.long",
-	"co.lang.byte",
-	"co.lang.char",
-	"co.lang.any",
-	"co.lang.bool",
-	"co.lang.number",
-	"co.lang.error",
-	"co.lang.AbstractError",
-	"co.lang.void",
-	"co.lang.value",
-	"co.lang.untyped", //emulating templates in nim
-	"co.lang.word",
-	"co.lang.MatchBindings",
-	"co.lang.tag",
-	"co.lang.hokrlt",
-	"co.lang.literal",
-	"co.lang.uninit",
-	"co.lang.range",
-	"co.lang.slice",
-	// co.lang.operator belongs exclusively to the dedicated operator-source
-	// grammar. Ordinary token folding must not route it as a declarable kind.
-	"co.lang.operator",
-	"co.lang.newtype",
-	"co.lang.opaquetype",
-	"co.lang.subtype",
-	"co.lang.supertype",
-	"co.lang.dependentType",
-	"co.lang.refinementType",
-	"co.lang.predicateType",
-	"co.lang.associatedType",
-	"co.lang.prolymorphic",
-	"co.lang.data",
-	"co.lang.type",
-	"co.lang.shape",
-	"co.lang.delegate",
-	"co.lang.variants",
-	"co.lang.condition",
-	"co.lang.generic",
+	"co.string", "co.int", "co.bit", "co.double", "co.float", "co.long",
+	"co.byte", "co.char", "co.any", "co.bool", "co.void", "co.value",
+	"co.untyped", "co.word", "co.MatchBindings", "co.number", "co.uninit",
+	"co.error", "co.AbstractError", "co.literal", "co.delegate", "co.condition",
+	"co.variants", "co.tag", "co.hokrlt", "co.newtype", "co.opaquetype",
+	"co.subtype", "co.supertype", "co.dependentType", "co.polymorphic",
+	"co.refinementType", "co.associatedType", "co.predicateType", "co.data",
+	"co.type", "co.generic", "co.shape",
 }
 
-// Builtin_Kinds lists the recognized co.lang kind identifiers (type, struct, class, etc.).
+// Builtin_Kinds lists the direct co.* declaration kinds.
 var Builtin_Kinds []string = []string{
-	"co.lang.struct",
-	"co.lang.cstruct",
-	"co.lang.unit",
-	"co.lang.loader",
-	"co.lang.class",
-	"co.lang.interface",
-	"co.lang.union",
-	"co.lang.object",
-	"co.lang.instance",
-	"co.lang.matcher",
-	"co.lang.trait",
-	"co.lang.mixin",
-	"co.lang.extension",
-	"co.lang.typeclass",
-	"co.lang.module",
-	"co.lang.block",
-	"co.lang.component",
-	"co.lang.signature",
-	"co.lang.function",
-	"co.lang.enum",
-	"co.lang.kind",
-	"co.lang.symbol",
+	"co.struct", "co.cstruct", "co.class", "co.interface", "co.union",
+	"co.object", "co.instance", "co.matcher", "co.loader", "co.trait",
+	"co.mixin", "co.extension", "co.typeclass", "co.module", "co.unit",
+	"co.block", "co.kind", "co.signature", "co.function", "co.callable",
+	"co.boundcallable", "co.enum", "co.symbol", "co.component",
 }
 
 var Built_In_Collections = []string{
-	"co.core.List",
-	"co.core.Set",
-	"co.core.Map",
-	"co.core.Tree",
-	"co.core.Trie",
-	"co.core.Array",
-	"co.core.Tuple",
-	"co.core.Comparable",
-	"co.core.Stack",
-	"co.core.Queue",
-	"co.core.StructObject",
-	"co.core.ClassObject",
-	"co.core.ModuleObject",
-	"co.core.InstanceObject",
-	"co.core.ObjectObject",
-	"co.core.Matrix",
+	"co.List", "co.Set", "co.Map", "co.Tree", "co.Trie", "co.Array",
+	"co.Tuple", "co.Comparable", "co.Stack", "co.Queue", "co.StructObject",
+	"co.ClassObject", "co.ModuleObject", "co.InstanceObject", "co.ObjectObject",
+	"co.Matrix",
 }
 
-var LIB_KINDS = []string{"application", "advanced", "dynamicvmrt", "ffi", "system"}
+var LIB_KINDS = []string{"application", "dynamicvmrt", "native"}
 
 // DirectiveKind distinguishes between pragmas and annotation decorators.
 type DirectiveKind int
@@ -495,9 +421,9 @@ var PDADs map[DirectiveKind][]string = map[DirectiveKind][]string{
 		"@co.ddap.use", "@co.ddap.alias", "@co.ddap.dynamicdispatch",
 		"@co.ddap.overload"},
 	ANNOTATION: []string{"@co.dap.template", "@co.dap.macro",
-		"@co.dap.operator", "@co.dap.annotation", "@co.dap.library",
-		"@co.dap.module", "@co.dap.native", "@co.dap.class", "@co.dap.static",
-		"@co.dap.instance", "@co.dap.object", "@co.dap.inline",
+		"@co.dap.extend", "@co.dap.operator", "@co.dap.annotation", "@co.dap.library",
+		"@co.dap.native", "@co.dap.class", "@co.dap.static",
+		"@co.dap.object", "@co.dap.inline",
 		"@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension",
 		"@co.dap.override", "@co.dap.implement", "@co.dap.virtual", "@co.dap.abstract",
 		"@co.dap.delegate", "@co.dap.scope", "@co.dap.typeclass", "@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops",

@@ -204,7 +204,19 @@ func TestNonCallQualifiedAndMemberReferencesKeepTheirFolding(t *testing.T) {
 		{scanlex.COMPOSITE_IDENTIFER, "service_fo.worker_fo.map"},
 	})
 	assertTokenStream(t, "co.out.render", []wantedToken{
-		{scanlex.BUIL_IN_STMT_EXPRS, "co.out.render"},
+		{scanlex.BUIL_IN_STMT_EXPRS, "co.out"},
+		{scanlex.DOT, "."},
+		{scanlex.IDENTIFIER, "render_fo"},
+	})
+	assertTokenStream(t, "this.field", []wantedToken{
+		{scanlex.KEYWORD, "this"},
+		{scanlex.DOT, "."},
+		{scanlex.IDENTIFIER, "field_fo"},
+	})
+	assertTokenStream(t, "fΦλ.internal", []wantedToken{
+		{scanlex.RESERVEDWORD, "fΦλ"},
+		{scanlex.DOT, "."},
+		{scanlex.IDENTIFIER, "internal_fo"},
 	})
 }
 

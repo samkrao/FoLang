@@ -30,7 +30,7 @@ func TestLeadingBOMAndEncodedReplacementRuneRemainValid(t *testing.T) {
 	if len(tokens) != 1 {
 		t.Fatalf("tokens = %#v, want one replacement-rune token", tokens)
 	}
-	assertKindValue(t, tokens[0], scanlex.SYMBOLIC_RUN, "\uFFFD")
+	assertKindValue(t, tokens[0], scanlex.UNKNOWN, "\uFFFD")
 
 	if !scanlex.IsOperatorSpelling("\uFFFD") {
 		t.Fatal("valid encoded U+FFFD should be an operator spelling")

@@ -61,7 +61,7 @@ func (lexer *Lexer) nextToken() Token {
 		if r, size := utf8.DecodeRuneInString(src); r == utf8.RuneError && size == 1 {
 			return lexer.emitUnknown(1, 0, 0)
 		}
-		if length, _, unsupported := detectUnsupportedAlphaLiteral(src); unsupported {
+		if length, _, unsupported := detectUnsupportedLiteral(src); unsupported {
 			lines, endColumn := multilineMetrics(src[:length])
 			return lexer.emitUnknown(length, lines, endColumn)
 		}

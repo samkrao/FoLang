@@ -4,17 +4,16 @@ import (
 	"strings"
 )
 
-// detectUnsupportedAlphaLiteral recognizes complete literal spellings reserved
-// for a post-alpha release.
+// detectUnsupportedLiteral recognizes complete literal-like spellings that are
+// outside the current language reference.
 //
 // This check runs before the ordinary regex table. That ordering is essential:
 // without it, `u8"hello"` becomes an identifier followed by a string, while
 // `"a\"b"` is split at the escaped quote and causes several unrelated parser
-// errors. Recognizing the whole future spelling gives the user one intentional
-// unsupported-feature diagnostic.
-func detectUnsupportedAlphaLiteral(source string) (length int, message string, ok bool) {
+// errors. Keeping the whole spelling lets the lexer return one UNKNOWN token.
+func detectUnsupportedLiteral(source string) (length int, message string, ok bool) {
 	if length, ok := scanRawStringLiteral(source); ok {
-		return length, "raw string literals are not supported in the alpha release", true
+		return length, "raw string literals are not part of the current language", true
 	}
 
 	if prefixLength := encodedLiteralPrefixLength(source); prefixLength > 0 {
@@ -24,9 +23,9 @@ func detectUnsupportedAlphaLiteral(source string) (length int, message string, o
 			length = len(source)
 		}
 		if quote == '\'' {
-			return length, "encoded character literal prefixes are not supported in the alpha release", true
+			return length, "encoded character literal prefixes are not part of the current language", true
 		}
-		return length, "encoded string literal prefixes are not supported in the alpha release", true
+		return length, "encoded string literal prefixes are not part of the current language", true
 	}
 
 	if source == "" || (source[0] != '"' && source[0] != '\'') {
@@ -40,11 +39,11 @@ func detectUnsupportedAlphaLiteral(source string) (length int, message string, o
 
 	if source[0] == '\'' {
 		if strings.Contains(source[:length], `\N{`) {
-			return length, "named universal character literals are not supported in the alpha release", true
+			return length, "named universal character literals are not part of the current language", true
 		}
-		return length, "escaped character literals are not supported in the alpha release", true
+		return length, "escaped character literals are not part of the current language", true
 	}
-	return length, "escaped string characters are not supported in the alpha release", true
+	return length, "escaped string characters are not part of the current language", true
 }
 
 // encodedLiteralPrefixLength returns the length of an encoding prefix only when
@@ -63,7 +62,7 @@ func encodedLiteralPrefixLength(source string) int {
 }
 
 // scanQuotedLiteral consumes through the matching quote while treating a
-// backslash and its following byte as one future escape. Zero means the source
+// backslash and its following byte as one unsupported escape. Zero means the source
 // does not contain a complete quoted literal.
 func scanQuotedLiteral(source string, quoteIndex int, quote byte) (length int, hasEscape bool) {
 	for i := quoteIndex + 1; i < len(source); i++ {
@@ -86,7 +85,7 @@ func scanQuotedLiteral(source string, quoteIndex int, quote byte) (length int, h
 
 // scanRawStringLiteral recognizes a complete C++-shaped raw string, including
 // an optional encoding prefix and matching custom delimiter. The spelling is
-// reserved so it is recognized only to produce an alpha diagnostic.
+// consumed as one invalid lexeme rather than several misleading tokens.
 func scanRawStringLiteral(source string) (int, bool) {
 	openLength := 0
 	for _, opening := range []string{`u8R"`, `uR"`, `UR"`, `LR"`, `R"`} {

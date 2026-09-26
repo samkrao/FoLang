@@ -121,16 +121,22 @@ func TestTokenize_StringLiteral_Empty(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestTokenize_Keywords(t *testing.T) {
-	cases := []string{"co", "let", "this", "for", "forall"}
-	for _, kw := range cases {
-		toks := meaningful(tokenize(kw))
+	cases := []struct {
+		spelling string
+		kind     scanlex.TokenKind
+	}{
+		{"co", scanlex.KEYWORD},
+		{"this", scanlex.KEYWORD},
+	}
+	for _, tc := range cases {
+		toks := meaningful(tokenize(tc.spelling))
 		if len(toks) == 0 {
-			t.Errorf("no token for keyword %q", kw)
+			t.Errorf("no token for keyword %q", tc.spelling)
 			continue
 		}
-		assertKind(t, toks[0], scanlex.KEYWORD)
-		if toks[0].Value != kw {
-			t.Errorf("keyword %q: expected value %q, got %q", kw, kw, toks[0].Value)
+		assertKind(t, toks[0], tc.kind)
+		if toks[0].Value != tc.spelling {
+			t.Errorf("keyword %q: expected value %q, got %q", tc.spelling, tc.spelling, toks[0].Value)
 		}
 	}
 
@@ -139,6 +145,10 @@ func TestTokenize_Keywords(t *testing.T) {
 		t.Fatal("no token for identifier \"self\"")
 	}
 	assertKindValue(t, toks[0], scanlex.IDENTIFIER, "self_fo")
+	for _, spelling := range []string{"for", "forall", "let"} {
+		toks := meaningful(tokenize(spelling))
+		assertKindValue(t, toks[0], scanlex.IDENTIFIER, spelling+"_fo")
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -146,9 +156,9 @@ func TestTokenize_Keywords(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestTokenize_Identifier_Kind(t *testing.T) {
-	toks := meaningful(tokenize("someVar co.lang.int;"))
+	toks := meaningful(tokenize("someVar co.int;"))
 	if len(toks) == 0 {
-		t.Fatal("expected tokens for 'someVar co.lang.int;'")
+		t.Fatal("expected tokens for 'someVar co.int;'")
 	}
 	// First token is the user identifier
 	assertKind(t, toks[0], scanlex.IDENTIFIER)
@@ -156,7 +166,7 @@ func TestTokenize_Identifier_Kind(t *testing.T) {
 
 func TestTokenize_Identifier_FoSuffix(t *testing.T) {
 	// The tokenizer appends _fo to user-defined identifiers after folding.
-	toks := meaningful(tokenize("myVar co.lang.int;"))
+	toks := meaningful(tokenize("myVar co.int;"))
 	if len(toks) == 0 {
 		t.Fatal("expected tokens")
 	}
@@ -165,31 +175,31 @@ func TestTokenize_Identifier_FoSuffix(t *testing.T) {
 	}
 }
 
-func TestTokenize_BuiltInType_CoLangInt(t *testing.T) {
-	// "co.lang.int" folds into a single BUILT_IN_TYPE token.
-	toks := meaningful(tokenize("x co.lang.int;"))
+func TestTokenize_BuiltInType_CoInt(t *testing.T) {
+	// "co.int" folds into a single BUILT_IN_TYPE token.
+	toks := meaningful(tokenize("x co.int;"))
 	if len(toks) == 0 {
 		t.Fatal("expected tokens")
 	}
 	_, found := findKind(toks, scanlex.BUILT_IN_TYPE)
 	if !found {
-		t.Errorf("expected BUILT_IN_TYPE token in 'x co.lang.int;', got %v", toks)
+		t.Errorf("expected BUILT_IN_TYPE token in 'x co.int;', got %v", toks)
 	}
 }
 
 func TestTokenize_BuiltInType_Value(t *testing.T) {
-	toks := meaningful(tokenize("x co.lang.string;"))
+	toks := meaningful(tokenize("x co.string;"))
 	tok, found := findKind(toks, scanlex.BUILT_IN_TYPE)
 	if !found {
 		t.Fatal("expected BUILT_IN_TYPE token")
 	}
-	if tok.Value != "co.lang.string" {
-		t.Errorf("expected BUILT_IN_TYPE value %q, got %q", "co.lang.string", tok.Value)
+	if tok.Value != "co.string" {
+		t.Errorf("expected BUILT_IN_TYPE value %q, got %q", "co.string", tok.Value)
 	}
 }
 
 func TestTokenize_TypeFirstOverlappingNames(t *testing.T) {
-	for _, name := range []string{"co.lang.value"} {
+	for _, name := range []string{"co.value"} {
 		t.Run(name, func(t *testing.T) {
 			toks := meaningful(tokenize("x " + name + ";"))
 			tok, found := findKind(toks, scanlex.BUILT_IN_TYPE)
@@ -365,19 +375,19 @@ func TestTokenize_BidirArrow_NotConfusedWithLeftArrow(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Bind variables ($, $0, $1)
+// Current-context sigil and one-based bind variables ($, $1, ...)
 // ---------------------------------------------------------------------------
 
-func TestTokenize_BindVarBare(t *testing.T) {
+func TestTokenize_ContextSigilDollar(t *testing.T) {
 	toks := meaningful(tokenize("$"))
 	if len(toks) == 0 {
-		t.Fatal("expected BIND_VAR token for '$'")
+		t.Fatal("expected CONTEXT_SIGIL_DOLLAR token for '$'")
 	}
-	assertKind(t, toks[0], scanlex.BIND_VAR)
+	assertKind(t, toks[0], scanlex.CONTEXT_SIGIL_DOLLAR)
 }
 
 func TestTokenize_BindVarIndexed(t *testing.T) {
-	cases := []string{"$0", "$1", "$2"}
+	cases := []string{"$1", "$2", "$12"}
 	for _, src := range cases {
 		toks := meaningful(tokenize(src))
 		if len(toks) == 0 {
@@ -449,18 +459,15 @@ func TestTokenize_WalrusDecl_Sequence(t *testing.T) {
 	if len(toks) < 4 {
 		t.Fatalf("expected at least 4 tokens, got %d: %v", len(toks), toks)
 	}
-	assertKind(t, toks[0], scanlex.KEYWORD)
-	if toks[0].Value != "let" {
-		t.Errorf("expected 'let', got %q", toks[0].Value)
-	}
+	assertKindValue(t, toks[0], scanlex.IDENTIFIER, "let_fo")
 	assertKind(t, toks[1], scanlex.IDENTIFIER)
 	assertKind(t, toks[2], scanlex.WALRUS)
 	assertKind(t, toks[3], scanlex.NUMBER)
 }
 
 func TestTokenize_VarDecl_Sequence(t *testing.T) {
-	// "someInt co.lang.int = 42;" — IDENTIFIER BUILT_IN_TYPE ASSIGNMENT NUMBER SEMI_COLON
-	toks := meaningful(tokenize("someInt co.lang.int = 42;"))
+	// "someInt co.int = 42;" — IDENTIFIER BUILT_IN_TYPE ASSIGNMENT NUMBER SEMI_COLON
+	toks := meaningful(tokenize("someInt co.int = 42;"))
 	if len(toks) < 4 {
 		t.Fatalf("expected at least 4 tokens, got %d: %v", len(toks), toks)
 	}

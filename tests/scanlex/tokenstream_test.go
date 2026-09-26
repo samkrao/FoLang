@@ -31,8 +31,23 @@ func TestTokenStreamFoldsOnDemandAndReturnsUnknown(t *testing.T) {
 
 func TestLexerReturnsUnknownForInvalidLexemes(t *testing.T) {
 	for _, source := range []string{
+		"_x",
+		"_1",
+		"__",
 		"a__b",
 		"name_",
+		"'bad__label",
+		"@_bad",
+		"@bad_",
+		"@co.dap.bad_",
+		"@bad..name",
+		"@1bad",
+		"$name",
+		"$0",
+		"$01",
+		"$0name",
+		"$1name",
+		"fΦλname",
 		"1.",
 		"@@notAMethod",
 		"\"unterminated",
@@ -94,13 +109,13 @@ func TestTokenStreamPeekBuffersRequestedLookahead(t *testing.T) {
 }
 
 func TestTokenStreamMatchesLegacyFolding(t *testing.T) {
-	source := "co.lang.int service.worker @custom.value co.out"
+	source := "co.int service.worker @custom.value co.out"
 	stream := scanlex.NewTokenStream(scanlex.NewLexer([]byte(source), "folded.fol", nil))
 	want := []struct {
 		kind  scanlex.TokenKind
 		value string
 	}{
-		{scanlex.BUILT_IN_TYPE, "co.lang.int"},
+		{scanlex.BUILT_IN_TYPE, "co.int"},
 		{scanlex.COMPOSITE_IDENTIFER, "service_fo.worker"},
 		{scanlex.CUSTOM_DIRECTIVES, "@custom.value"},
 		{scanlex.BUIL_IN_STMT_EXPRS, "co.out"},

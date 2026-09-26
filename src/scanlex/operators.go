@@ -164,9 +164,8 @@ var builtinSymbolKinds = map[string]TokenKind{
 	"<..": LT_DOT_DOT, "<..<": LT_DOT_DOT_LT,
 	":": COLON, ":=": WALRUS, "::": LIFECYCLE_MARKER, "::=": COLON_WALRUS,
 	"->": ARROW, "->|": ARROW_PIPE, "->>": ARROW_GT, "<-": LEFT_ARROW, "<->": BIDIR_ARROW,
-	"=>": EQGT, "=>>": EQGTGT, "==>>": EQEQGTGT,
-	"^=>": CARET_EQGT,
-	"?":   QUESTION, "?=": QEQ, "$": BIND_VAR, "`": BACK_TICK, "\\": BACK_SLASH,
+	"=>": EQGT, "=>>": EQGTGT,
+	"?": QUESTION, "?=": QEQ, "$": CONTEXT_SIGIL_DOLLAR, "`": BACK_TICK, "\\": BACK_SLASH,
 }
 
 var builtinOperatorSpellings = func() map[string]bool {
@@ -177,11 +176,10 @@ var builtinOperatorSpellings = func() map[string]bool {
 	return spellings
 }()
 
-// languagePredeclaredOperatorSpellings are reserved by the language rather than
-// declarable by a project. Each is a valid whole symbolic run, so the lexer
-// recognizes it and does not fail merely because its operator semantics are
-// unimplemented; the PARSER is what rejects its use as an expression operator
-// (docs/language-ref.md, C.10).
+// languagePredeclaredOperatorSpellings are the language-provided Unicode
+// operators. They are already present in the built-in parse table, but retain
+// CUSTOM_OPERATOR token identity because their glyphs use the same scanner path
+// as project operators. Projects may overload them but may not redeclare them.
 var languagePredeclaredOperatorSpellings = map[string]bool{
 	"∪": true, "∩": true,
 }
@@ -190,11 +188,9 @@ var languagePredeclaredOperatorSpellings = map[string]bool{
 // reserved by the language and therefore cannot be declared in a project-local
 // operator source.
 //
-// The pre-declared glyph set is language-reserved: a project may neither declare
-// one with co.lang.operator nor supply an overload implementation for one, because
-// the language has not yet enabled the operator each stands for. They tokenize
-// like any other complete symbolic run so that the diagnostic can come from the
-// parser rather than from a lexical failure.
+// The pre-declared glyph set is language-owned: a project may not declare one
+// with co.operator, although the ordinary overload mechanism may provide an
+// implementation for an applicable operand type.
 func IsLanguageOwnedOperatorSpelling(spelling string) bool {
 	return builtinOperatorSpellings[spelling] || languagePredeclaredOperatorSpellings[spelling]
 }
@@ -210,7 +206,7 @@ func IsPredeclaredOperatorSpelling(spelling string) bool {
 // overload implementations from ordinary built-in/pre-declared operators.
 func IsHardReservedOperatorSpelling(spelling string) bool {
 	switch spelling {
-	case "::=", "->>", "<->", "^=>", "`", "\\", "#", "//", "/*":
+	case "::=", "->>", "<->", "`", "\\", "#", "//", "/*":
 		return true
 	default:
 		return false

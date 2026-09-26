@@ -147,6 +147,9 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 		// terminates. That ordering is why the guard needs no separate lookahead
 		// (docs/language-ref.md, "Label Lexing and Character Literals").
 		if n := labelIdentifierLength(src); n > 0 {
+			if !isValidIdentifierLexeme(src[1:n]) {
+				return scanned{action: actionUnknown, length: n}, true
+			}
 			return emit(LABEL_IDENTIFIER, n), true
 		}
 		// A span that closes on the same line is a character literal that the
@@ -171,21 +174,26 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 			return scanned{action: actionUnknown, length: length}, true
 		}
 		return emit(NUMBER, numericLiteralLength(src)), true
+	case c == '.' && len(src) > 1 && isDigit(src[1]):
+		return scanned{action: actionUnknown, length: numericCandidateLength(src)}, true
 
-	// ---- "__", "_", identifiers -------------------------------------------
-	// The old table tried "__" then "_" before the identifier rule, so a name that
-	// begins with an underscore is never one identifier. That is preserved here.
+	// ---- "_" and identifiers -----------------------------------------------
+	// A lone underscore is contextual syntax. A longer alphanumeric/underscore
+	// spelling beginning with it is one invalid identifier lexeme and must remain
+	// whole for the parser rather than splitting into `_` plus an identifier.
 	case c == '_':
-		if strings.HasPrefix(src, "__") {
-			return emit(DBL_UNDERSCORE, 2), true
+		if n := identifierLength(src); n > 1 {
+			return scanned{action: actionUnknown, length: n}, true
 		}
 		return emit(DISCARD_WILD_VAR, 1), true
 
 	// fΦλ is the one non-ASCII hard-reserved word. It is recognized as an
 	// exact language-owned spelling without widening FoLang's ASCII identifier
-	// grammar. An ASCII identifier continuation prevents the special match, so
-	// fΦλname is rejected by the ordinary Unicode/symbol path rather than split
-	// into a reserved word followed by an identifier.
+	// grammar. An ASCII identifier continuation prevents the special match; that
+	// complete reserved-prefix spelling is returned as one UNKNOWN identifier.
+	case strings.HasPrefix(src, "fΦλ") && len(src) > len("fΦλ") &&
+		isIdentifierContinuation(src[len("fΦλ")]):
+		return scanned{action: actionUnknown, length: len("fΦλ") + identifierLength(src[len("fΦλ"):])}, true
 	case strings.HasPrefix(src, "fΦλ") &&
 		(len(src) == len("fΦλ") || !isIdentifierContinuation(src[len("fΦλ")])):
 		return emit(RESERVEDWORD, len("fΦλ")), true
@@ -212,21 +220,44 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 			}
 			return lex.scanSymbolicRun(src)
 		}
+		if len(src) > 1 && isMetadataNameByte(src[1]) {
+			n := metadataNameCandidateLength(src)
+			if !isValidQualifiedMetadataName(src[:n]) {
+				return scanned{action: actionUnknown, length: n}, true
+			}
+		}
 		if len(src) > 1 && (isAlpha(src[1]) || src[1] == '_') {
-			return emit(ATDAP, 1+identifierLength(src[1:])), true
+			n := 1 + identifierLength(src[1:])
+			if !isValidIdentifierLexeme(src[1:n]) {
+				return scanned{action: actionUnknown, length: n}, true
+			}
+			return emit(ATDAP, n), true
 		}
 		return lex.scanSymbolicRun(src)
 
-	// ---- result and self bindings: "$", "$1", "$12" ------------------------
+	// ---- current context and result bindings: "$", "$1", "$12" -------------
 	case c == '$':
 		n := 1
 		for n < len(src) && isDigit(src[n]) {
 			n++
 		}
-		if n > 1 || operatorRunLength(src) == 1 {
+		if n > 1 {
+			candidateEnd := n
+			if n < len(src) && isIdentifierContinuation(src[n]) {
+				candidateEnd += identifierLength(src[n:])
+			}
+			if src[1] == '0' {
+				return scanned{action: actionUnknown, length: candidateEnd}, true
+			}
+			if candidateEnd > n {
+				return scanned{action: actionUnknown, length: candidateEnd}, true
+			}
 			return emit(BIND_VAR, n), true
 		}
-		return lex.scanSymbolicRun(src)
+		if len(src) > 1 && isIdentifierContinuation(src[1]) {
+			return scanned{action: actionUnknown, length: 1 + identifierLength(src[1:])}, true
+		}
+		return emit(CONTEXT_SIGIL_DOLLAR, 1), true
 
 	// ---- brackets and braces ----------------------------------------------
 	case c == '[':
@@ -249,8 +280,6 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 	case c == ';':
 		return emit(SEMI_COLON, 1), true
 
-	case c == '$':
-		return emit(CONTEXT_SIGIL_DOLLAR, 1), true
 	// ---- complete symbolic run -------------------------------------------
 	case operatorRunLength(src) > 0:
 		return lex.scanSymbolicRun(src)
@@ -260,9 +289,10 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 }
 
 // scanSymbolicRun classifies exactly one complete contiguous symbol run.
-// Unknown runs remain whole as SYMBOLIC_RUN so grammar context can accept
-// contextual metadata such as *** in T->(***), or reject the complete spelling
-// everywhere else. No shorter-token fallback is attempted (DECISION-LEX-003).
+// Pointer degrees of three or more stars remain SYMBOLIC_RUN because the
+// derived-type grammar interprets their complete spelling contextually. Every
+// other unregistered run is returned whole as UNKNOWN; no shorter-token
+// fallback is attempted.
 func (lex *lexer) scanSymbolicRun(src string) (scanned, bool) {
 	if DEBUG_TRACE {
 		defer lex.debugTraceEnd(lex.debugTraceBegin("scanSymbolicRun", SYMBOLIC_RUN, tracePreview(src)))
@@ -290,7 +320,10 @@ func (lex *lexer) scanSymbolicRun(src string) (scanned, bool) {
 		}
 		return emit(CUSTOM_OPERATOR, length), true
 	}
-	return emit(SYMBOLIC_RUN, length), true
+	if len(run) >= 3 && strings.Trim(run, "*") == "" {
+		return emit(SYMBOLIC_RUN, length), true
+	}
+	return scanned{action: actionUnknown, length: length}, true
 }
 
 func boundariesSatisfyFixity(fixity string, before, after bool) bool {
@@ -475,6 +508,35 @@ func identifierLength(src string) int {
 	return n
 }
 
+func isValidIdentifierLexeme(src string) bool {
+	return len(src) > 0 && isAlpha(src[0]) &&
+		!strings.Contains(src, "__") && !strings.HasSuffix(src, "_")
+}
+
+func metadataNameCandidateLength(src string) int {
+	n := 1
+	for n < len(src) && isMetadataNameByte(src[n]) {
+		n++
+	}
+	return n
+}
+
+func isMetadataNameByte(c byte) bool {
+	return isAlpha(c) || isDigit(c) || c == '_' || c == '.'
+}
+
+func isValidQualifiedMetadataName(src string) bool {
+	if len(src) < 2 || src[0] != '@' {
+		return false
+	}
+	for _, segment := range strings.Split(src[1:], ".") {
+		if !isValidIdentifierLexeme(segment) {
+			return false
+		}
+	}
+	return true
+}
+
 // numericLiteralLength returns the length of the COMPLETE integer-literal or
 // floating-literal at the cursor, suffix included.
 //
@@ -553,14 +615,73 @@ func malformedNumericLiteral(src string) (int, string) {
 				}
 				return end, fmt.Sprintf("malformed hexadecimal floating literal %q; digits are required on both sides of the point", src[:end])
 			}
+			if after > before+1 && binaryExponentLength(src, after) == 0 {
+				end := numericCandidateLength(src)
+				return end, fmt.Sprintf("malformed hexadecimal floating literal %q; a binary exponent is required", src[:end])
+			}
 		}
 	}
 
 	digits := digitRun(src, 0, isDigit)
+	if src[0] == '0' && digits > 1 {
+		invalidOctalDigit := false
+		for i := 1; i < digits; i++ {
+			if src[i] == '8' || src[i] == '9' {
+				invalidOctalDigit = true
+				break
+			}
+		}
+		decimalFloat := digits < len(src) &&
+			(src[digits] == '.' && digits+1 < len(src) && isDigit(src[digits+1]) || exponentLength(src, digits) > 0)
+		if invalidOctalDigit && !decimalFloat {
+			end := numericCandidateLength(src)
+			return end, fmt.Sprintf("invalid octal integer literal %q", src[:end])
+		}
+	}
 	if digits < len(src) && src[digits] == '.' && (digits+1 == len(src) || decimalPointCannotStartPostfix(src[digits+1])) {
 		return digits + 1, fmt.Sprintf("malformed floating literal %q; write a digit after the decimal point (for example, 1.0)", src[:digits+1])
 	}
+
+	validEnd := numericLiteralLength(src)
+	if validEnd < len(src) && isNumericContinuation(src[validEnd]) {
+		end := numericCandidateLength(src)
+		return end, fmt.Sprintf("malformed numeric literal %q", src[:end])
+	}
 	return 0, ""
+}
+
+// numericCandidateLength preserves a complete malformed numeric spelling so
+// the parser receives one UNKNOWN token instead of a misleading sequence of
+// individually valid numbers, identifiers, and punctuation.
+func numericCandidateLength(src string) int {
+	n := 0
+	for n < len(src) {
+		c := src[n]
+		if isAlpha(c) || isDigit(c) || c == '_' || c == '\'' {
+			n++
+			continue
+		}
+		if c == '.' && n+1 < len(src) && src[n+1] != '.' {
+			n++
+			continue
+		}
+		if (c == '+' || c == '-') && n > 0 {
+			previous := src[n-1]
+			if previous == 'e' || previous == 'E' || previous == 'p' || previous == 'P' {
+				n++
+				continue
+			}
+		}
+		break
+	}
+	if n == 0 {
+		return 1
+	}
+	return n
+}
+
+func isNumericContinuation(c byte) bool {
+	return isAlpha(c) || isDigit(c) || c == '_' || c == '\''
 }
 
 func malformedExponentEnd(src string, i int, marker func(byte) bool) int {
@@ -760,7 +881,7 @@ func tracePreview(src string) string {
 // its KEYWORD or RESERVEDWORD kind instead of letting it pass as an IDENTIFIER.
 func (lex *lexer) emitIdentifier(lexeme string, start, end *helpers.Position) {
 	kind := IDENTIFIER
-	if strings.Contains(lexeme, "__") || strings.HasSuffix(lexeme, "_") {
+	if !isValidIdentifierLexeme(lexeme) {
 		kind = UNKNOWN
 	}
 	if k, ok := Reserved_lu[lexeme]; ok {
