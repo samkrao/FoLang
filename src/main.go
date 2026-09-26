@@ -2,11 +2,16 @@
 package main
 
 import (
-	"os"
+	"fmt"
 
-	entry "github.com/samkrao/fo-lang/src/entry"
+	"github.com/samkrao/fo-lang/src/preparser"
 )
 
 func main() {
-	entry.Run(os.Args)
+
+	preparser.PreParse("", "")
+	parser := preparser.Init("")
+	ast := parser.Parse("")
+
+	fmt.Sprint(ast)
 }

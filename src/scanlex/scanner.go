@@ -264,11 +264,11 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 	case c == ';':
 		return emit(SEMI_COLON, 1), true
 
+	case c == '$':
+		return emit(CONTEXT_SIGIL_DOLLAR, 1), true
 	// ---- complete symbolic run -------------------------------------------
 	case operatorRunLength(src) > 0:
 		return lex.scanSymbolicRun(src)
-	case c == '$':
-		return emit(CONTEXT_SIGIL_DOLLAR, 1), true
 	}
 
 	return scanned{}, false

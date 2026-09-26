@@ -1,15 +1,16 @@
 (*
    FoLang EBNF Grammar — current alpha profile
 
-   Consolidated from:
+   Derived from the normative requirements in:
      docs/language-ref.md
-     SHA-256: c9a9b6dadfb61b04325b1c2f4169a99ef1444b9856b23ca70ee592b8ffda85ef
-     Bytes: 711896
-     Lines: 16269
+      SHA-256: f7607e6423f9f91775719f84249ef22440035d33f58cbeaad94f924531ba12f6
+      Bytes: 212158
+      Lines: 5065
 
    Authority:
-     The language reference is normative. This grammar is a syntactic
-     consolidation of the source forms defined there.
+     The language reference is normative. This EBNF is a derived aid only;
+     it may be incomplete and must not be used to infer syntax that the
+     language reference does not define.
 
    Notation:
      =       defines a production
@@ -117,8 +118,9 @@
        encountering an explicitly specification-reserved future fixity in the
        current alpha profile produces an unsupported-feature parser error.
      - Examples never enable, disable, or reserve syntax. Active syntax comes
-       from this grammar; reserved-future treatment applies only to spellings or
-       forms the language reference explicitly identifies as future/reserved.
+       from the normative language reference; reserved-future treatment applies
+       only to spellings or forms that reference explicitly identifies as
+       future/reserved.
      - All built-in @co.* directives, annotations, pragmas and decorators use
        the single generic annotation application shape, but the complete @co.*
        name must first match the compiler's predefined built-in metadata

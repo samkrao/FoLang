@@ -33,27 +33,27 @@ A backend or tool may use any internal representation or optimization permitted 
 
 ### Grammar, Semantics, and Examples
 
-The lexical and syntactic grammar defined by this specification is the authoritative definition of the FoLang source forms accepted by the current language profile. Normative semantic rules define the meaning of those forms and any additional validity constraints that are checked after parsing.
+The normative lexical and syntactic requirements stated throughout this specification define the FoLang source forms accepted by the current language profile. Normative semantic rules define the meaning of those forms and any additional validity constraints that are checked after parsing.
 
-Examples are **illustrative only**. The presence or absence of an example does not enable, disable, reserve, or otherwise modify a grammar production, token, declaration form, operator, or semantic rule. Likewise, an inventory or explanatory table does not create new source syntax unless the specification explicitly defines the corresponding grammar or identifies the spelling as an explicitly reserved future form.
+Examples are **illustrative only**. The presence or absence of an example does not enable, disable, reserve, or otherwise modify a grammar production, token, declaration form, operator, or semantic rule. Likewise, an inventory or explanatory table does not create new source syntax unless this specification explicitly defines that syntax or identifies the spelling as an explicitly reserved future form.
 
-For parser and grammar generation, the governing classification is therefore deterministic:
+For parser behavior and generation of derived grammar documentation, the governing classification is therefore deterministic:
 
 ```text
-active lexical/syntactic grammar
-    -> accepted and parsed according to the applicable grammar rules
+active normative syntax and lexical requirements
+    -> accepted and parsed according to the applicable requirements
 
 explicitly identified reserved/future form
     -> recognized as language-owned where its reserved spelling is defined
     -> rejected with an unsupported-feature diagnostic in the current profile
 
 all other source text
-    -> ordinary lexical or syntax error when it does not match the active grammar
+    -> ordinary lexical or syntax error when it does not match the active requirements
 ```
 
 ### Language Evolution and Compatibility
 
-The alpha period permits experimentation, consolidation, implementation, renaming, syntax changes, and removal. Before version 1.0, a proposed structural feature becomes part of the active language only when a specification revision explicitly incorporates it into the current lexical/syntactic grammar and defines its applicable normative semantics. A proposed or future feature that is mentioned only descriptively does not become active grammar.
+The alpha period permits experimentation, consolidation, implementation, renaming, syntax changes, and removal. Before version 1.0, a proposed structural feature becomes part of the active language only when a specification revision explicitly incorporates it into the normative syntax requirements and defines its applicable normative semantics. A proposed or future feature that is mentioned only descriptively does not become active syntax.
 
 Nothing is carried into version 1.0 as implicitly reserved or unsupported merely because it appeared in an example, table, inventory, or design discussion. A spelling is reserved while unsupported only when this specification explicitly identifies that spelling or form as reserved/future syntax.
 
@@ -71,7 +71,7 @@ A post-1.0 correction may fix an implementation/specification discrepancy or rem
 
 ## Lexical Profile and Statement Termination
 
-The consolidated FoLang EBNF referenced by [Appendix A](#appendix-a---complete-FoLang-ebnf-grammar) is the formal lexical and syntactic grammar. The rules below restate source-level constraints needed by parser/frontend implementations and conformance tests without duplicating the complete EBNF in this document.
+The normative lexical and syntactic requirements are defined by this reference. The rules below state source-level constraints needed by parser/frontend implementations and conformance tests. Appendix A provides a derived EBNF aid; it is not an independent or authoritative definition of FoLang syntax.
 
 ### Source Encoding and Identifiers
 
@@ -105,11 +105,11 @@ example `'c'`.
 
 ### Numeric Literals
 
-FoLang supports the integer and floating literal families defined by the consolidated EBNF. Numeric digit separators are not part of the current profile, so forms such as `1'000`, `0x1'a`, and `0b1011'0010` are invalid.
+FoLang supports the integer and floating literal families defined by the normative lexical requirements in this reference. Numeric digit separators are not part of the current profile, so forms such as `1'000`, `0x1'a`, and `0b1011'0010` are invalid.
 
 A numeric sign is not part of an ordinary numeric literal token. In expressions, unary `+` or `-` is parsed as a prefix operator. Pattern syntax separately permits a leading `+` or `-` before an integer or floating literal.
 
-Integer literals support binary, octal, decimal, and hexadecimal forms together with the suffixes admitted by the grammar. Floating literals support decimal and hexadecimal forms. A radix-point form requires at least one digit on each side of the point: `1.0` and `0.10` are valid, while `1.` and `.10` are invalid. Scientific notation without a radix point, such as `1e5`, remains valid. A backend-conditional floating suffix is accepted only when the selected backend/compiler contract supports the corresponding representation.
+Integer literals support binary, octal, decimal, and hexadecimal forms together with the suffixes admitted by the normative syntax requirements. Floating literals support decimal and hexadecimal forms. A radix-point form requires at least one digit on each side of the point: `1.0` and `0.10` are valid, while `1.` and `.10` are invalid. Scientific notation without a radix point, such as `1e5`, remains valid. A backend-conditional floating suffix is accepted only when the selected backend/compiler contract supports the corresponding representation.
 
 ### Comments, Whitespace, and Line Breaks
 
@@ -583,8 +583,8 @@ Derived types are named through `co.type` declarations before ordinary variable 
 | `co.predicateType` | Type-level predicate/filter over candidate types. |
 | `co.data(...)` | Concrete closed ADT constructor whose payload types are already concrete/resolved. It is not parameterized by declaration-head type parameters. |
 | `co.type` | General named type declaration kind. |
-| `co.generic` | Reserved/future generic-type constructor; it is not part of the active generic declaration model unless explicitly enabled by the grammar/profile. |
-| `co.shape` | Shape/type-expression facility for callable/type shapes where defined by the grammar and semantic rules. |
+| `co.generic` | Reserved/future generic-type constructor; it is not part of the active generic declaration model unless this reference explicitly enables it. |
+| `co.shape` | Shape/type-expression facility for callable/type shapes where defined by the syntax and semantic rules in this reference. |
 
 `co.variants(...)`, `co.data(...)`, `co.dependentType(...)`, and `co.polymorphic(...)` are not interchangeable:
 
@@ -663,7 +663,7 @@ _    `    ?
 "    '    \
 ```
 
-The exact lexical/syntactic role of each spelling is defined by the consolidated EBNF and the corresponding semantic section.
+The exact lexical/syntactic role of each spelling is defined by the normative syntax requirements and corresponding semantic sections in this reference.
 
 `$=>`, `$->>`, and `$->|` are contextual control productions formed from the `$` context sigil and the applicable control token. The former `this =>`, `this ^=>`, `this ->>`, and `this ->|` control spellings are not part of the current model.
 
@@ -687,7 +687,7 @@ Larger precedence numbers bind more tightly. Precedence and associativity determ
 | 550 | `*`, `/`, `%` | infix | left | binary |
 | 500 | `∪`, `∩` | infix | left | binary |
 | 450 | `+`, `-` | infix | left | binary |
-| 400 | `..`, `<..`, `..<`, `<..<` | infix/range | none | range form; a bound may be omitted where the range grammar permits |
+| 400 | `..`, `<..`, `..<`, `<..<` | infix/range | none | range form; a bound may be omitted where the range syntax permits |
 | 350 | `<`, `<=`, `>`, `>=`, `:>`,`<:` | infix | none | binary |
 | 300 | `==`, `!=` | infix | none | binary |
 | 250 | `&` | infix | left | binary |
@@ -816,7 +816,7 @@ Components live beneath:
 <project-root>/components/
 ```
 
-Their exact standardized subdirectories and surface files are defined by the project-layout grammar.
+Their exact standardized subdirectories and surface files are defined by the project-layout requirements in this reference.
 
 Component rules include:
 
@@ -1121,7 +1121,7 @@ even though both families ultimately contain `co.int` elements.
 
 A refinement type restricts which **values** of a base type are valid. A dependent type makes one or more compile-time/index values part of the **type identity** itself.
 
-Path-dependent result types may refer to a value/type path when the applicable grammar and type-resolution rules permit it:
+Path-dependent result types may refer to a value/type path when the applicable syntax and type-resolution rules in this reference permit it:
 
 ```folang
 identity(x co.int)->(x.type) = x;
@@ -4282,7 +4282,7 @@ metadata field or nested metadata record is a syntax error.
 For `@co.dap.implementation`, `kind` classifies how a bodyless standard declaration is implemented and `operation` identifies the compiler-owned backend-neutral runtime operation. The `operation` value is resolved as a qualified operation symbol and preserved in `.folenc`/HIR; it is not target-language source text. The annotation is valid only on a declaration kind for which this specification permits a runtime-operation marker.
 
 The reference intentionally contains no colon-bound `@co.*` metadata example;
-all such spellings are rejected by the grammar.
+the normative metadata syntax above rejects such spellings.
 
 This metadata rule does not change ordinary value syntax. Object field
 initializers and runtime map entries continue to use `:` according to their
@@ -5058,8 +5058,8 @@ ordinary declaration
 
 
 
-## Appendix A - Complete FoLang EBNF Grammar
+## Appendix A - Derived FoLang EBNF
 
-The standalone consolidated EBNF referenced below is the normative lexical and syntactic grammar for FoLang. The prose sections of this reference define semantics and parser-validity constraints without maintaining a second embedded copy of the grammar.
+The standalone EBNF below is a derived documentation aid for the syntax defined by this reference. It is not normative and does not add to, narrow, or override the language requirements stated here. If it is incomplete or conflicts with this reference, this reference governs; update the EBNF to match the normative requirements.
 
 [{{FOLANG_EBNF}}](./grammar/folang.ebnf)
