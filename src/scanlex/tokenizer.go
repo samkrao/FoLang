@@ -4,18 +4,9 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/samkrao/fo-lang/src/builtins"
 	"github.com/samkrao/fo-lang/src/helpers"
 )
-
-// isSpecialBuiltin compares source and internally lowered identifier spellings.
-// Folding may already have appended _fo to one or more path segments when this
-// decision is made; that implementation suffix must not turn a statement form
-// such as a language-owned dotted built-in into an ordinary method call.
-func isSpecialBuiltin(name string) bool {
-	logical := strings.ReplaceAll(name, "_fo.", ".")
-	logical = strings.TrimSuffix(logical, "_fo")
-	return slices.Contains(SpecialBuiltins, logical)
-}
 
 type lexer struct {
 	fn         string
@@ -72,7 +63,7 @@ func tokenize(source string, fn string, custom *CustomOperators) []Token {
 	lazyLexer := newLexer([]byte(source), fn, custom)
 	lex := lazyLexer.inner
 	if DEBUG_TRACE {
-		defer lex.debugTraceEnd(lex.debugTraceBegin("tokenize", INVALID, ""))
+		defer lex.debugTraceEnd(lex.debugTraceBegin("tokenize", builtins.INVALID, ""))
 	}
 
 	// Keep the historical slice API as an adapter over the lazy scanner. The
@@ -81,7 +72,7 @@ func tokenize(source string, fn string, custom *CustomOperators) []Token {
 	for {
 		token := lazyLexer.nextToken()
 		tokens = append(tokens, token)
-		if token.Kind == EOF {
+		if token.Kind == builtins.EOF {
 			break
 		}
 	}
@@ -103,8 +94,8 @@ func foldSpecialStatementBuiltins(lex *lexer) {
 	out := make([]Token, 0, len(in))
 	for i := 0; i < len(in); {
 		if i+2 < len(in) && logicalFoldedName(in[i].Value) == "this" &&
-			in[i+1].Kind == DOT && isSpecialBuiltin("this."+logicalFoldedName(in[i+2].Value)) {
-			out = append(out, newUniqueToken(BUIL_IN_STMT_EXPRS, "this."+logicalFoldedName(in[i+2].Value),
+			in[i+1].Kind == builtins.DOT && IsSpecialBuiltin("this."+logicalFoldedName(in[i+2].Value)) {
+			out = append(out, newUniqueToken(builtins.BUIL_IN_STMT_EXPRS, "this."+logicalFoldedName(in[i+2].Value),
 				in[i].StartPos.Copy(), in[i+2].EndPos.Copy()))
 			i += 3
 			continue
@@ -129,7 +120,7 @@ func cleanupLB(lex *lexer) []Token {
 		}
 
 		Token_ := lex.currentToken()
-		if Token_.Kind != NEWLINE {
+		if Token_.Kind != builtins.NEWLINE {
 
 			nTokens = append(nTokens, Token_)
 		}
@@ -155,17 +146,17 @@ func foldTokens(lex *lexer) []Token {
 		length := 1
 		lstTokens := []Token{Token_}
 
-		if Token_.Kind == IDENTIFIER || Token_.Kind == KEYWORD || Token_.Kind == RESERVEDWORD || Token_.Kind == CONTEXT_KEYWORD || Token_.Kind == ATDAP {
-			if (Token_.Kind == KEYWORD || Token_.Kind == RESERVEDWORD || Token_.Kind == CONTEXT_KEYWORD) &&
-				lex.lookAhead(1).Kind == DOT && slices.Contains(UnsupportedObjects, Token_.Value) {
+		if Token_.Kind == builtins.IDENTIFIER || Token_.Kind == builtins.KEYWORD || Token_.Kind == builtins.RESERVEDWORD || Token_.Kind == builtins.CONTEXT_KEYWORD || Token_.Kind == builtins.ATDAP {
+			if (Token_.Kind == builtins.KEYWORD || Token_.Kind == builtins.RESERVEDWORD || Token_.Kind == builtins.CONTEXT_KEYWORD) &&
+				lex.lookAhead(1).Kind == builtins.DOT && slices.Contains(UnsupportedObjects, Token_.Value) {
 				if _, hasKeywordMethods := KeyWords_me[Token_.Value]; hasKeywordMethods {
 					unknown := Token_
-					unknown.Kind = UNKNOWN
+					unknown.Kind = builtins.UNKNOWN
 					consumed := 0
-					for lex.lookAhead(consumed+1).Kind == DOT {
+					for lex.lookAhead(consumed+1).Kind == builtins.DOT {
 						part := lex.lookAhead(consumed + 2)
-						if part.Kind != IDENTIFIER && part.Kind != KEYWORD && part.Kind != RESERVEDWORD &&
-							part.Kind != CONTEXT_KEYWORD && part.Kind != BUILT_IN_METHOD {
+						if part.Kind != builtins.IDENTIFIER && part.Kind != builtins.KEYWORD && part.Kind != builtins.RESERVEDWORD &&
+							part.Kind != builtins.CONTEXT_KEYWORD && part.Kind != builtins.BUILT_IN_METHOD {
 							break
 						}
 						unknown.Value += "." + part.Value
@@ -183,9 +174,9 @@ func foldTokens(lex *lexer) []Token {
 				}
 			}
 
-			for lex.lookAhead(1).Kind == DOT {
+			for lex.lookAhead(1).Kind == builtins.DOT {
 
-				if lex.lookAhead(2).Kind == IDENTIFIER || lex.lookAhead(2).Kind == KEYWORD || lex.lookAhead(2).Kind == RESERVEDWORD || lex.lookAhead(2).Kind == CONTEXT_KEYWORD || lex.lookAhead(2).Kind == BUILT_IN_METHOD {
+				if lex.lookAhead(2).Kind == builtins.IDENTIFIER || lex.lookAhead(2).Kind == builtins.KEYWORD || lex.lookAhead(2).Kind == builtins.RESERVEDWORD || lex.lookAhead(2).Kind == builtins.CONTEXT_KEYWORD || lex.lookAhead(2).Kind == builtins.BUILT_IN_METHOD {
 					// adding dot and advancing
 					lex.moveNext()
 					lstTokens = append(lstTokens, lex.currentToken())
@@ -204,7 +195,7 @@ func foldTokens(lex *lexer) []Token {
 
 		}
 
-		if invoked := lex.lookAhead(1).Kind == OPEN_PAREN; changed && reservedReceiverChainNeedsSeparation(lstTokens, tempToken) {
+		if invoked := lex.lookAhead(1).Kind == builtins.OPEN_PAREN; changed && reservedReceiverChainNeedsSeparation(lstTokens, tempToken) {
 			// Hard-reserved roots remain visible as primaries for both field access
 			// and invocation. They must never be lowered into an ordinary composite
 			// identifier merely because a member follows them.
@@ -213,38 +204,38 @@ func foldTokens(lex *lexer) []Token {
 			// A chain after a completed receiver is postfix structure, not a
 			// qualified name. Preserve every source dot so
 			// `factory().service.worker.run()` becomes three MemberExpr suffixes.
-			nTokens = appendSeparatedMemberChain(nTokens, lstTokens, lex.lookAhead(1).Kind == OPEN_PAREN)
+			nTokens = appendSeparatedMemberChain(nTokens, lstTokens, lex.lookAhead(1).Kind == builtins.OPEN_PAREN)
 		} else if changed {
 			dirTok := tempToken
 			if _, ok := Built_in_directives(dirTok); ok && strings.HasPrefix(tempToken, "@") {
-				nTokens = append(nTokens, newUniqueToken(BUILT_IN_DIRECTIVES, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+				nTokens = append(nTokens, newUniqueToken(builtins.BUILT_IN_DIRECTIVES, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 			} else if IsLanguageOwnedMetadataName(tempToken) {
-				nTokens = append(nTokens, newUniqueToken(UNKNOWN, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+				nTokens = append(nTokens, newUniqueToken(builtins.UNKNOWN, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 			} else if strings.HasPrefix(tempToken, "@") {
-				nTokens = append(nTokens, newUniqueToken(CUSTOM_DIRECTIVES, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+				nTokens = append(nTokens, newUniqueToken(builtins.CUSTOM_DIRECTIVES, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 
 			} else if tempToken == "co.operator" {
-				nTokens = append(nTokens, newUniqueToken(OPERATOR_SOURCE_KIND, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+				nTokens = append(nTokens, newUniqueToken(builtins.OPERATOR_SOURCE_KIND, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 			} else if _, ok := Operator_source_constants[tempToken]; ok {
 				// A co.operator.* property value belongs to the operator-source
 				// grammar alone, so it keeps its exact spelling and takes no
 				// backend lowering (DECISION-OPDECL-006).
-				nTokens = append(nTokens, newUniqueToken(OPERATOR_SOURCE_CONSTANT, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+				nTokens = append(nTokens, newUniqueToken(builtins.OPERATOR_SOURCE_CONSTANT, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 			} else if slices.Contains(Builtin_Kinds, tempToken) {
-				nTokens = append(nTokens, newUniqueToken(BUILT_IN_KIND, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+				nTokens = append(nTokens, newUniqueToken(builtins.BUILT_IN_KIND, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 			} else if slices.Contains(Builtin_types, tempToken) {
-				nTokens = append(nTokens, newUniqueToken(BUILT_IN_TYPE, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+				nTokens = append(nTokens, newUniqueToken(builtins.BUILT_IN_TYPE, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 
 			} else if slices.Contains(Built_In_Collections, tempToken) {
-				nTokens = append(nTokens, newUniqueToken(BUILT_IN_COLLECTIONS, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+				nTokens = append(nTokens, newUniqueToken(builtins.BUILT_IN_COLLECTIONS, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 
 			} else if _, ok := Built_in_constants[tempToken]; ok {
-				nTokens = append(nTokens, newUniqueToken(BUILT_IN_CONSTANTS, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+				nTokens = append(nTokens, newUniqueToken(builtins.BUILT_IN_CONSTANTS, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 
 			} else if _, ok := Built_in_stmt_exprs[tempToken]; ok {
 				// Prefer the complete registered namespace over the shorter root.
 				// In particular, co.sys.file is a receiver in its own right.
-				nTokens = append(nTokens, newUniqueToken(BUIL_IN_STMT_EXPRS, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+				nTokens = append(nTokens, newUniqueToken(builtins.BUIL_IN_STMT_EXPRS, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 
 			} else if _, ok := Built_in_stmt_exprs[Token_.Value]; ok {
 				otherFlag := checkBuiltInStExmet(Token_, tempToken, lastToken)
@@ -258,7 +249,7 @@ func foldTokens(lex *lexer) []Token {
 				// SpecialBuiltins are statement spellings, not calls. In particular,
 				// A registered dotted statement spelling may have an OPEN_PAREN after
 				// its folded path without being an ordinary method call.
-				if lex.lookAhead(1).Kind == OPEN_PAREN && !isSpecialBuiltin(tempToken) {
+				if lex.lookAhead(1).Kind == builtins.OPEN_PAREN && !IsSpecialBuiltin(tempToken) {
 					receiver := strings.TrimSuffix(tempToken, "."+lastToken)
 					receiverEnd := lstTokens[len(lstTokens)-3].EndPos.Copy()
 
@@ -266,7 +257,7 @@ func foldTokens(lex *lexer) []Token {
 						nTokens = separated
 					} else if !otherFlag {
 						nTokens = append(nTokens, newUniqueToken(
-							BUIL_IN_STMT_EXPRS,
+							builtins.BUIL_IN_STMT_EXPRS,
 							receiver,
 							lstTokens[0].StartPos.Copy(),
 							receiverEnd,
@@ -274,7 +265,7 @@ func foldTokens(lex *lexer) []Token {
 					} else if length-1 > 1 {
 						receiver = strings.ReplaceAll(receiver, ".", "_fo.")
 						nTokens = append(nTokens, newUniqueToken(
-							COMPOSITE_IDENTIFER,
+							builtins.COMPOSITE_IDENTIFER,
 							receiver,
 							lstTokens[0].StartPos.Copy(),
 							receiverEnd,
@@ -282,7 +273,7 @@ func foldTokens(lex *lexer) []Token {
 					} else {
 						receiver += "_fo"
 						nTokens = append(nTokens, newUniqueToken(
-							IDENTIFIER,
+							builtins.IDENTIFIER,
 							receiver,
 							lstTokens[0].StartPos.Copy(),
 							receiverEnd,
@@ -290,16 +281,16 @@ func foldTokens(lex *lexer) []Token {
 					}
 
 					nTokens = append(nTokens, newUniqueToken(
-						DOT,
+						builtins.DOT,
 						".",
 						lstTokens[len(lstTokens)-2].StartPos.Copy(),
 						lstTokens[len(lstTokens)-2].EndPos.Copy(),
 					))
 
-					methodKind := METHOD_CALL
+					methodKind := builtins.METHOD_CALL
 					methodValue := lastToken + "_fo"
 					if IsReservedMethod(lastToken) {
-						methodKind = BUILT_IN_METHOD
+						methodKind = builtins.BUILT_IN_METHOD
 						methodValue = lastToken
 					}
 					nTokens = append(nTokens, newUniqueToken(
@@ -311,7 +302,7 @@ func foldTokens(lex *lexer) []Token {
 				} else if !otherFlag {
 					rmethod := false
 					var nTempToken = tempToken
-					if isSpecialBuiltin(tempToken) {
+					if IsSpecialBuiltin(tempToken) {
 						rmethod = false
 					} else if IsReservedMethod(lastToken) {
 						rmethod = true
@@ -319,18 +310,18 @@ func foldTokens(lex *lexer) []Token {
 					} else {
 						rmethod = false
 					}
-					nTokens = append(nTokens, newUniqueToken(BUIL_IN_STMT_EXPRS, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+					nTokens = append(nTokens, newUniqueToken(builtins.BUIL_IN_STMT_EXPRS, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 
 					if rmethod {
-						nTokens = append(nTokens, newUniqueToken(DOT, ".", lstTokens[len(lstTokens)-2].StartPos.Copy(), lstTokens[len(lstTokens)-2].EndPos.Copy()))
-						nTokens = append(nTokens, newUniqueToken(BUILT_IN_METHOD, lastToken, lstTokens[len(lstTokens)-1].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+						nTokens = append(nTokens, newUniqueToken(builtins.DOT, ".", lstTokens[len(lstTokens)-2].StartPos.Copy(), lstTokens[len(lstTokens)-2].EndPos.Copy()))
+						nTokens = append(nTokens, newUniqueToken(builtins.BUILT_IN_METHOD, lastToken, lstTokens[len(lstTokens)-1].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 					}
 				} else {
 					if separated, ok := appendLongestBuiltInQualifiedName(nTokens, lstTokens); ok {
 						nTokens = separated
 					} else if length > 1 {
 						tempToken = strings.ReplaceAll(tempToken, ".", "_fo.")
-						nTokens = append(nTokens, newUniqueToken(COMPOSITE_IDENTIFER, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+						nTokens = append(nTokens, newUniqueToken(builtins.COMPOSITE_IDENTIFER, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 					} else {
 						nTokens = append(nTokens, Token_)
 					}
@@ -341,49 +332,49 @@ func foldTokens(lex *lexer) []Token {
 				dirTok := nTempToken
 				dirTok = strings.TrimPrefix(dirTok, "@")
 				if _, ok := Built_in_directives(dirTok); ok && strings.HasPrefix(nTempToken, "@") {
-					nTokens = append(nTokens, newUniqueToken(BUILT_IN_DIRECTIVES, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
+					nTokens = append(nTokens, newUniqueToken(builtins.BUILT_IN_DIRECTIVES, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 				} else if strings.HasPrefix(nTempToken, "@") {
-					nTokens = append(nTokens, newUniqueToken(CUSTOM_DIRECTIVES, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
+					nTokens = append(nTokens, newUniqueToken(builtins.CUSTOM_DIRECTIVES, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 
 				} else if slices.Contains(Builtin_Kinds, tempToken) {
-					nTokens = append(nTokens, newUniqueToken(BUILT_IN_KIND, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
+					nTokens = append(nTokens, newUniqueToken(builtins.BUILT_IN_KIND, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 				} else if slices.Contains(Builtin_types, tempToken) {
-					nTokens = append(nTokens, newUniqueToken(BUILT_IN_TYPE, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
+					nTokens = append(nTokens, newUniqueToken(builtins.BUILT_IN_TYPE, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 				} else if slices.Contains(Built_In_Collections, tempToken) {
-					nTokens = append(nTokens, newUniqueToken(BUILT_IN_COLLECTIONS, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
+					nTokens = append(nTokens, newUniqueToken(builtins.BUILT_IN_COLLECTIONS, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 				} else if _, ok := Built_in_constants[nTempToken]; ok {
-					nTokens = append(nTokens, newUniqueToken(BUILT_IN_CONSTANTS, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
+					nTokens = append(nTokens, newUniqueToken(builtins.BUILT_IN_CONSTANTS, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 
-				} else if lex.lookAhead(1).Kind == OPEN_PAREN && length-1 == 1 {
+				} else if lex.lookAhead(1).Kind == builtins.OPEN_PAREN && length-1 == 1 {
 					nTempToken += "_fo"
-					nTokens = append(nTokens, newUniqueToken(IDENTIFIER, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
+					nTokens = append(nTokens, newUniqueToken(builtins.IDENTIFIER, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 				} else if length > 1 {
 					nTempToken = strings.ReplaceAll(nTempToken, ".", "_fo.")
-					nTokens = append(nTokens, newUniqueToken(COMPOSITE_IDENTIFER, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
+					nTokens = append(nTokens, newUniqueToken(builtins.COMPOSITE_IDENTIFER, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 				} else {
 					nTokens = append(nTokens, Token_)
 				}
-				nTokens = append(nTokens, newUniqueToken(DOT, ".", lstTokens[len(lstTokens)-2].StartPos.Copy(), lstTokens[len(lstTokens)-2].EndPos.Copy()))
-				nTokens = append(nTokens, newUniqueToken(BUILT_IN_METHOD, lastToken, lstTokens[len(lstTokens)-1].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+				nTokens = append(nTokens, newUniqueToken(builtins.DOT, ".", lstTokens[len(lstTokens)-2].StartPos.Copy(), lstTokens[len(lstTokens)-2].EndPos.Copy()))
+				nTokens = append(nTokens, newUniqueToken(builtins.BUILT_IN_METHOD, lastToken, lstTokens[len(lstTokens)-1].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 			} else {
-				if lex.lookAhead(1).Kind == OPEN_PAREN {
+				if lex.lookAhead(1).Kind == builtins.OPEN_PAREN {
 					var nTempToken = strings.Replace(tempToken, "."+lastToken, "", 1)
 					length = length - 1
 					if length > 1 {
 						nTempToken = strings.ReplaceAll(nTempToken, ".", "_fo.")
-						nTokens = append(nTokens, newUniqueToken(COMPOSITE_IDENTIFER, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
+						nTokens = append(nTokens, newUniqueToken(builtins.COMPOSITE_IDENTIFER, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 					} else {
 						nTempToken = nTempToken + "_fo"
-						nTokens = append(nTokens, newUniqueToken(IDENTIFIER, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
+						nTokens = append(nTokens, newUniqueToken(builtins.IDENTIFIER, nTempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-3].EndPos.Copy()))
 
 					}
-					nTokens = append(nTokens, newUniqueToken(DOT, ".", lstTokens[len(lstTokens)-2].StartPos.Copy(), lstTokens[len(lstTokens)-2].EndPos.Copy()))
+					nTokens = append(nTokens, newUniqueToken(builtins.DOT, ".", lstTokens[len(lstTokens)-2].StartPos.Copy(), lstTokens[len(lstTokens)-2].EndPos.Copy()))
 					lastToken = lastToken + "_fo"
-					nTokens = append(nTokens, newUniqueToken(METHOD_CALL, lastToken, lstTokens[len(lstTokens)-1].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+					nTokens = append(nTokens, newUniqueToken(builtins.METHOD_CALL, lastToken, lstTokens[len(lstTokens)-1].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 
 				} else {
 					tempToken = strings.ReplaceAll(tempToken, ".", "_fo.")
-					nTokens = append(nTokens, newUniqueToken(COMPOSITE_IDENTIFER, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
+					nTokens = append(nTokens, newUniqueToken(builtins.COMPOSITE_IDENTIFER, tempToken, lstTokens[0].StartPos.Copy(), lstTokens[len(lstTokens)-1].EndPos.Copy()))
 				}
 			}
 
@@ -393,14 +384,14 @@ func foldTokens(lex *lexer) []Token {
 			// forward dotted-name fold above. Classify it here from its immediate
 			// token context to give `factory().work()` the same method token as
 			// `factory.work()`.
-			if lex.lookBack(1).Kind == DOT && lex.lookAhead(1).Kind == OPEN_PAREN && IsReservedMethod(Token_.Value) {
-				Token_.Kind = BUILT_IN_METHOD
+			if lex.lookBack(1).Kind == builtins.DOT && lex.lookAhead(1).Kind == builtins.OPEN_PAREN && IsReservedMethod(Token_.Value) {
+				Token_.Kind = builtins.BUILT_IN_METHOD
 				nTokens = append(nTokens, Token_)
-			} else if lex.lookBack(1).Kind == DOT && lex.lookAhead(1).Kind == OPEN_PAREN && Token_.Kind == IDENTIFIER {
-				Token_.Kind = METHOD_CALL
+			} else if lex.lookBack(1).Kind == builtins.DOT && lex.lookAhead(1).Kind == builtins.OPEN_PAREN && Token_.Kind == builtins.IDENTIFIER {
+				Token_.Kind = builtins.METHOD_CALL
 				Token_.Value += "_fo"
 				nTokens = append(nTokens, Token_)
-			} else if Token_.Kind == IDENTIFIER {
+			} else if Token_.Kind == builtins.IDENTIFIER {
 				Token_.Value = Token_.Value + "_fo"
 				nTokens = append(nTokens, Token_)
 			} else {
@@ -420,23 +411,23 @@ func foldTokens(lex *lexer) []Token {
 // classifyBuiltInName applies the main folding precedence to a complete dotted
 // receiver. Looking at the receiver rather than only its first segment preserves
 // the longest registered prefix in co.sys.file.open() and co.const.true.to_str().
-func classifyBuiltInName(name string) (TokenKind, bool) {
+func classifyBuiltInName(name string) (builtins.TokenKind, bool) {
 	if slices.Contains(Builtin_Kinds, name) {
-		return BUILT_IN_KIND, true
+		return builtins.BUILT_IN_KIND, true
 	}
 	if slices.Contains(Builtin_types, name) {
-		return BUILT_IN_TYPE, true
+		return builtins.BUILT_IN_TYPE, true
 	}
 	if _, ok := Built_in_constants[name]; ok {
-		return BUILT_IN_CONSTANTS, true
+		return builtins.BUILT_IN_CONSTANTS, true
 	}
 	if slices.Contains(Built_In_Collections, name) {
-		return BUILT_IN_COLLECTIONS, true
+		return builtins.BUILT_IN_COLLECTIONS, true
 	}
 	if _, ok := Built_in_stmt_exprs[name]; ok {
-		return BUIL_IN_STMT_EXPRS, true
+		return builtins.BUIL_IN_STMT_EXPRS, true
 	}
-	return EOF, false
+	return builtins.EOF, false
 }
 
 // appendLongestBuiltInReceiver selects the longest registered prefix of the
@@ -460,7 +451,7 @@ func appendLongestBuiltInReceiver(out []Token, gathered []Token) ([]Token, bool)
 		out = append(out, newUniqueToken(kind, name, gathered[0].StartPos.Copy(), prefixEnd))
 		for segment := count; segment < receiverSegments; segment++ {
 			dot := gathered[segment*2-1]
-			out = append(out, newUniqueToken(DOT, ".", dot.StartPos.Copy(), dot.EndPos.Copy()))
+			out = append(out, newUniqueToken(builtins.DOT, ".", dot.StartPos.Copy(), dot.EndPos.Copy()))
 			out = append(out, normalizedMemberToken(gathered[segment*2]))
 		}
 		return out, true
@@ -478,7 +469,7 @@ func appendLongestBuiltInQualifiedName(out []Token, gathered []Token) ([]Token, 
 		return out, false
 	}
 	dot := gathered[len(gathered)-2]
-	separated = append(separated, newUniqueToken(DOT, ".", dot.StartPos.Copy(), dot.EndPos.Copy()))
+	separated = append(separated, newUniqueToken(builtins.DOT, ".", dot.StartPos.Copy(), dot.EndPos.Copy()))
 	separated = append(separated, normalizedMemberToken(gathered[len(gathered)-1]))
 	return separated, true
 }
@@ -486,7 +477,7 @@ func appendLongestBuiltInQualifiedName(out []Token, gathered []Token) ([]Token, 
 // normalizedMemberToken applies identifier lowering to an individual member
 // without changing contextual keyword kinds.
 func normalizedMemberToken(segment Token) Token {
-	if segment.Kind == IDENTIFIER {
+	if segment.Kind == builtins.IDENTIFIER {
 		segment.Value += "_fo"
 	}
 	return segment
@@ -496,11 +487,11 @@ func normalizedMemberToken(segment Token) Token {
 // dot whose receiver was already completed by a closing delimiter. Every segment
 // of such a tail is a postfix member suffix, not part of a qualified name.
 func dottedChainFollowsCompletedExpression(lex *lexer, consumed int) bool {
-	if lex.lookBack(consumed).Kind != DOT {
+	if lex.lookBack(consumed).Kind != builtins.DOT {
 		return false
 	}
 	switch lex.lookBack(consumed + 1).Kind {
-	case CLOSE_PAREN, CLOSE_BRACKET, CLOSE_CURLY:
+	case builtins.CLOSE_PAREN, builtins.CLOSE_BRACKET, builtins.CLOSE_CURLY:
 		return true
 	default:
 		return false
@@ -511,7 +502,7 @@ func dottedChainFollowsCompletedExpression(lex *lexer, consumed int) bool {
 // to the parser. `this.member` is ordinary member syntax, while fΦλ is the
 // private standard-package root; neither spelling may be identifier-lowered.
 func reservedReceiverChainNeedsSeparation(gathered []Token, fullName string) bool {
-	if len(gathered) == 0 || isSpecialBuiltin(fullName) {
+	if len(gathered) == 0 || IsSpecialBuiltin(fullName) {
 		return false
 	}
 	return gathered[0].Value == "this" || gathered[0].Value == "fΦλ"
@@ -525,15 +516,15 @@ func appendSeparatedMemberChain(out []Token, gathered []Token, invoked bool) []T
 	for i := 0; i < len(gathered); i += 2 {
 		if i > 0 {
 			dot := gathered[i-1]
-			out = append(out, newUniqueToken(DOT, ".", dot.StartPos.Copy(), dot.EndPos.Copy()))
+			out = append(out, newUniqueToken(builtins.DOT, ".", dot.StartPos.Copy(), dot.EndPos.Copy()))
 		}
 
 		segment := gathered[i]
 		if invoked && i == lastSegment {
 			if IsReservedMethod(segment.Value) {
-				segment.Kind = BUILT_IN_METHOD
+				segment.Kind = builtins.BUILT_IN_METHOD
 			} else {
-				segment.Kind = METHOD_CALL
+				segment.Kind = builtins.METHOD_CALL
 				segment.Value += "_fo"
 			}
 		} else {
@@ -599,7 +590,7 @@ func (lex *lexer) lookBack(n int) Token {
 	return Token{}
 }
 func (lex *lexer) moveNext() {
-	if lex.currentPos == len(lex.Tokens) || lex.Tokens[lex.currentPos].Kind == EOF {
+	if lex.currentPos == len(lex.Tokens) || lex.Tokens[lex.currentPos].Kind == builtins.EOF {
 		lex.currentPos = lex.currentPos + 0
 		return
 	}
@@ -623,7 +614,7 @@ func (lex *lexer) currentToken() Token {
 	}
 }
 func (lex *lexer) isEof() bool {
-	return lex.currentPos >= len(lex.Tokens) || lex.Tokens[lex.currentPos].Kind == EOF
+	return lex.currentPos >= len(lex.Tokens) || lex.Tokens[lex.currentPos].Kind == builtins.EOF
 }
 
 func (lex *lexer) push(token Token) {
