@@ -90,15 +90,15 @@ const (
 	BUILT_IN_CONSTANTS  // 52
 
 	// Misc
-	NUM_TOKENS    // 53
-	HASH          // 54
-	DOLLAR        // 55
-	TILD          // 56
-	FORWARD_SLASH // 57
-	BACK_TICK     // 58
-	PIPE          // 59
-	SINGLE_QUOTE  // 60
-	DOUBL_QUOTE   // 61
+	NUM_TOKENS           // 53
+	HASH                 // 54
+	CONTEXT_SIGIL_DOLLAR // 55
+	TILD                 // 56
+	FORWARD_SLASH        // 57
+	BACK_TICK            // 58
+	PIPE                 // 59
+	SINGLE_QUOTE         // 60
+	DOUBL_QUOTE          // 61
 
 	//OTHER_OPERTORS
 	TT_OP_LAMBDA          // λ	// 62 ⒪
@@ -142,7 +142,7 @@ const (
 	COLON_WALRUS           // 99 ::=	ynamic variable binding operator, used for dynamic variable binding in pattern matching and comprehensions
 	QEQ                    // 100 ?=	used for conditional assignments like in if statements and pattern matching
 	LEFT_ARROW             // 101 <- comprehension generator / channel receive
-	DOLLAR_ARROW_GT        // 102 ->> continue marker after `this`; pipeline/reverse chaining elsewhere
+	ARROW_GT               // 102 ->> continue marker after `this`; pipeline/reverse chaining elsewhere
 	BIDIR_ARROW            // 103 <-> bidirectional channel / swap operator
 	DOUBLE_AT              // 104 @@ special method prefix (@@new, @@init)
 	EQEQGTGT               // 105  ==>>
@@ -193,9 +193,9 @@ const (
 	// CARET_EQGT is the structural ^=> marker used only by the complete
 	// `this ^=> values;` enclosing-callable return statement. It is not an
 	// expression operator and cannot be overloaded.
-	DOLLAR_CARET_EQGT //116
-	DOLLAR_ARROW_PIPE //117
-	DOLLAR_EQ_GT      //118
+	CARET_EQGT //116
+	ARROW_PIPE //117
+	EQ_GT      //118
 
 )
 

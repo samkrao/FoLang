@@ -145,7 +145,7 @@ func isOperatorRune(r rune) bool {
 	return !unicode.IsSpace(r)
 }
 
-const asciiOperatorChars = "+-*/%<>=!&|^~?:.@#$`\\"
+const asciiOperatorChars = "+-*/%<>=!&|^~?:.@#`\\"
 
 // builtinSymbolKinds is the exact whole-run classification table. Entries that
 // are structural or hard-reserved remain here because they are scanner-known
