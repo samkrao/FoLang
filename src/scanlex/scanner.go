@@ -31,8 +31,9 @@ const (
 	// actionNewline consumes a line break and pushes the NEWLINE token the old
 	// scanner pushed, which cleanupLB removes once scanning is complete.
 	actionNewline
-	// actionError reports a diagnostic for the span and consumes it.
-	actionError
+	// actionUnknown consumes a lexically invalid or unsupported span and emits
+	// it as one UNKNOWN token.
+	actionUnknown
 )
 
 // scanned is one lexical decision: what was matched, how long it is, and what to do.
@@ -42,8 +43,6 @@ type scanned struct {
 	length    int
 	lines     int
 	endColumn int
-	message   string
-	errType   helpers.ErrorType
 }
 
 func emit(kind TokenKind, length int) scanned {
@@ -98,24 +97,24 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 			if n < 0 {
 				n = len(src)
 			}
+			if containsInvalidSourceEncoding(src[:n]) {
+				return scanned{action: actionUnknown, length: n}, true
+			}
 			return skip(n), true
 		}
 		if strings.HasPrefix(src, "/*") {
 			// block-comment ends at the FIRST "*/" and may span line breaks.
 			if end := strings.Index(src[2:], "*/"); end >= 0 {
 				n := 2 + end + 2
+				if containsInvalidSourceEncoding(src[:n]) {
+					lines, endColumn := multilineMetrics(src[:n])
+					return scanned{action: actionUnknown, length: n, lines: lines, endColumn: endColumn}, true
+				}
 				lines, endColumn := multilineMetrics(src[:n])
 				return scanned{action: actionSkip, length: n, lines: lines, endColumn: endColumn}, true
 			}
 			lines, endColumn := multilineMetrics(src)
-			return scanned{
-				action:    actionError,
-				length:    len(src),
-				lines:     lines,
-				endColumn: endColumn,
-				message:   "unterminated block comment; a \"/*\" comment must be closed with \"*/\"",
-				errType:   helpers.InvalidSyntax,
-			}, true
+			return scanned{action: actionUnknown, length: len(src), lines: lines, endColumn: endColumn}, true
 		}
 		return lex.scanSymbolicRun(src)
 
@@ -125,15 +124,21 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 	// old scanner produced.
 	case c == '"':
 		if n := stringLiteralLength(src); n > 0 {
+			if containsInvalidSourceEncoding(src[:n]) {
+				return scanned{action: actionUnknown, length: n}, true
+			}
 			return emit(STRING, n), true
 		}
-		return emit(DOUBL_QUOTE, 1), true
+		return scanned{action: actionUnknown, length: unterminatedStringLength(src)}, true
 
 	// ---- character literal -----------------------------------------------
 	// alpha-basic-c-character is any character except the apostrophe, the
 	// backslash, CR and LF — a space and a tab are ordinary c-characters.
 	case c == '\'':
 		if n := characterLiteralLength(src); n > 0 {
+			if containsInvalidSourceEncoding(src[:n]) {
+				return scanned{action: actionUnknown, length: n}, true
+			}
 			return emit(CHAR, n), true
 		}
 		// label-identifier, tried only after the character literal, which IS the
@@ -156,28 +161,14 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 		// more than one" states something plainly untrue about the source in
 		// front of the reader.
 		if n := malformedCharacterLiteralLength(src); n > 0 {
-			found := "more than one"
-			if n == 2 {
-				found = "none"
-			}
-			return scanned{
-				action:  actionError,
-				length:  n,
-				message: "a character literal contains exactly one character; " + src[:n] + " encloses " + found,
-				errType: helpers.InvalidSyntax,
-			}, true
+			return scanned{action: actionUnknown, length: n}, true
 		}
-		return emit(SINGLE_QUOTE, 1), true
+		return scanned{action: actionUnknown, length: 1}, true
 
 	// ---- numeric literal -------------------------------------------------
 	case isDigit(c):
-		if length, message := malformedNumericLiteral(src); length > 0 {
-			return scanned{
-				action:  actionError,
-				length:  length,
-				message: message,
-				errType: helpers.InvalidSyntax,
-			}, true
+		if length, _ := malformedNumericLiteral(src); length > 0 {
+			return scanned{action: actionUnknown, length: length}, true
 		}
 		return emit(NUMBER, numericLiteralLength(src)), true
 
@@ -217,13 +208,7 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 				if slices.Contains(Special_methods, src[:n]) {
 					return emit(SPECIAL_METHODS, n), true
 				}
-				return scanned{
-					action: actionError,
-					length: n,
-					message: fmt.Sprintf("%q is not a FoLang special method; the special methods are %s",
-						src[:n], strings.Join(Special_methods, ", ")),
-					errType: helpers.InvalidSyntax,
-				}, true
+				return scanned{action: actionUnknown, length: n}, true
 			}
 			return lex.scanSymbolicRun(src)
 		}
@@ -287,6 +272,9 @@ func (lex *lexer) scanSymbolicRun(src string) (scanned, bool) {
 		return scanned{}, false
 	}
 	run := src[:length]
+	if containsInvalidSourceEncoding(run) {
+		return scanned{action: actionUnknown, length: length}, true
+	}
 
 	if kind, ok := builtinSymbolKinds[run]; ok {
 		return emit(kind, length), true
@@ -298,15 +286,7 @@ func (lex *lexer) scanSymbolicRun(src string) (scanned, bool) {
 		before := explicitSymbolBoundaryBefore(lex.source, lex.pos)
 		after := explicitSymbolBoundaryAfter(lex.source, lex.pos+length)
 		if utf8.RuneCountInString(run) > 1 && !boundariesSatisfyFixity(fixity, before, after) {
-			return scanned{
-				action: actionError,
-				length: length,
-				message: fmt.Sprintf(
-					"multi-symbol %s operator %q requires an explicit boundary on every operand-facing side",
-					fixity, run,
-				),
-				errType: helpers.InvalidSyntax,
-			}, true
+			return scanned{action: actionUnknown, length: length}, true
 		}
 		return emit(CUSTOM_OPERATOR, length), true
 	}
@@ -468,6 +448,20 @@ func stringLiteralLength(src string) int {
 		}
 	}
 	return 0
+}
+
+// unterminatedStringLength consumes the quote and remaining same-line text as
+// one UNKNOWN token when no closing quote exists before the line break.
+func unterminatedStringLength(src string) int {
+	for i := 1; i < len(src); i++ {
+		if src[i] == '\r' || src[i] == '\n' {
+			return i
+		}
+	}
+	if len(src) == 0 {
+		return 0
+	}
+	return len(src)
 }
 
 // identifierLength returns the length of the identifier at the cursor. The span is
@@ -692,6 +686,23 @@ func isIdentifierContinuation(c byte) bool {
 	return isAlpha(c) || isDigit(c) || c == '_'
 }
 
+// containsInvalidSourceEncoding detects malformed UTF-8 or an embedded BOM in
+// a span. Source validity is represented lexically as UNKNOWN, never reported
+// through a diagnostic side channel.
+func containsInvalidSourceEncoding(source string) bool {
+	for offset := 0; offset < len(source); {
+		if strings.HasPrefix(source[offset:], utf8BOM) {
+			return true
+		}
+		r, size := utf8.DecodeRuneInString(source[offset:])
+		if r == utf8.RuneError && size == 1 {
+			return true
+		}
+		offset += size
+	}
+	return false
+}
+
 // emitNewline pushes the NEWLINE token that marks a line break.
 //
 // cleanupLB drops these once scanning finishes; they exist so line bookkeeping happens
@@ -748,23 +759,10 @@ func tracePreview(src string) string {
 // alphanumeric segments and never ends in one. Reserved_lu then gives a reserved word
 // its KEYWORD or RESERVEDWORD kind instead of letting it pass as an IDENTIFIER.
 func (lex *lexer) emitIdentifier(lexeme string, start, end *helpers.Position) {
-	// A malformed name is reported but still EMITTED. The batch path never
-	// returns from report, so this only matters to a surviving caller — and for
-	// one, an identifier that ends in an underscore is a name the user is still
-	// typing. Dropping the token would remove it from the tree and cost every
-	// feature that depends on the surrounding declaration parsing.
-	if strings.Contains(lexeme, "__") {
-		lex.report(lex.errorException(
-			fmt.Sprintf("identifier %q contains consecutive underscores; FoLang identifiers use single underscores between alphanumeric segments", lexeme),
-			helpers.InvalidSyntax, *start, *end))
-	}
-	if strings.HasSuffix(lexeme, "_") {
-		lex.report(lex.errorException(
-			fmt.Sprintf("identifier %q ends in an underscore; a FoLang identifier must end in a letter or digit", lexeme),
-			helpers.InvalidSyntax, *start, *end))
-	}
-
 	kind := IDENTIFIER
+	if strings.Contains(lexeme, "__") || strings.HasSuffix(lexeme, "_") {
+		kind = UNKNOWN
+	}
 	if k, ok := Reserved_lu[lexeme]; ok {
 		kind = k
 	}

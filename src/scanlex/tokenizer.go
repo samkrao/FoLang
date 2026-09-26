@@ -1,12 +1,9 @@
 package scanlex
 
 import (
-	"fmt"
 	"slices"
 	"strings"
-	"unicode/utf8"
 
-	"github.com/samkrao/fo-lang/src/foerrors"
 	"github.com/samkrao/fo-lang/src/helpers"
 )
 
@@ -21,18 +18,17 @@ func isSpecialBuiltin(name string) bool {
 }
 
 type lexer struct {
-	fn     string
-	custom *CustomOperators
-	// sink is the diagnostic policy. nil is the batch path, which stops the
-	// process at the first diagnostic; any non-nil sink keeps scanning.
-	sink       *diagnosticSink
+	fn         string
+	custom     *CustomOperators
 	Tokens     []Token
 	source     string
-	sourcearr  []string
 	pos        int
 	line       int
 	currentPos int
 	col        int
+	lineText   string
+	lineTextAt int
+	lineTextOK bool
 	posi       *helpers.Position
 	// indentLevel is the per-lexer nesting depth of the optional debug trace.
 	indentLevel int
@@ -40,49 +36,6 @@ type lexer struct {
 
 // utf8BOM is the U+FEFF byte-order mark in its UTF-8 encoding.
 var utf8BOM = string(rune(0xFEFF))
-
-// diagnosticSink decides what the scanner does with a lexical diagnostic.
-//
-// There are exactly three policies, and the difference between them is whether
-// scanning CONTINUES, which is what an embedding consumer needs and the batch
-// compiler does not:
-//
-//	nil       fatal   report through foerrors.HandleErrors, which does not return
-//	discard   survive drop the diagnostic and keep scanning
-//	collect   survive retain the diagnostic and keep scanning
-//
-// The fatal policy is the historical default and is unchanged.
-type diagnosticSink struct {
-	items  []helpers.ErrorInterface
-	retain bool
-}
-
-// discardDiagnostics builds the surviving sink that drops what it is given.
-func discardDiagnostics() *diagnosticSink { return &diagnosticSink{} }
-
-// collectDiagnostics builds the surviving sink that retains what it is given.
-func collectDiagnostics() *diagnosticSink { return &diagnosticSink{retain: true} }
-
-// report hands a diagnostic to the sink, or to the fatal path when there is
-// none. It returns so that every caller can then consume the offending span and
-// guarantee forward progress.
-func (lex *lexer) report(err helpers.ErrorInterface) {
-	if !helpers.IsRegisteredDiagnosticName(err.DiagnosticName()) {
-		panic(fmt.Sprintf("unregistered diagnostic name %q", err.DiagnosticName()))
-	}
-	if lex.sink == nil {
-		// The batch path. HandleErrors does not return when the error is real,
-		// so nothing after this call runs.
-		foerrors.HandleErrors(err)
-		return
-	}
-	if lex.sink.retain {
-		lex.sink.items = append(lex.sink.items, err)
-	}
-}
-
-// surviving reports whether scanning continues past a diagnostic.
-func (lex *lexer) surviving() bool { return lex.sink != nil }
 
 // Tokenize lexes the given source string into a slice of Tokens, performing folding and cleanup.
 func Tokenize(source string, fn string) []Token {
@@ -93,23 +46,13 @@ func Tokenize(source string, fn string) []Token {
 // best-effort project surface scans whose callers report any relevant errors
 // during their authoritative parse.
 func TokenizeQuiet(source string, fn string) []Token {
-	return tokenize(source, fn, nil, discardDiagnostics())
+	return tokenize(source, fn, nil)
 }
 
-// TokenizeCollecting lexes source and returns its diagnostics instead of
-// terminating on the first one.
-//
-// This is the entry point for an embedding consumer — a language server above
-// all. It always returns a complete token stream: a byte the scanner cannot
-// classify is reported and then consumed, so scanning makes progress and the
-// rest of the file is still tokenized. Highlighting and the parse that follows
-// therefore survive a malformed region instead of disappearing with it.
-//
-// Tokenize keeps the batch behaviour and is unchanged.
+// TokenizeCollecting is retained for compatibility. Lexical problems are
+// returned as UNKNOWN tokens, so the diagnostics result is always empty.
 func TokenizeCollecting(source string, fn string, custom *CustomOperators) ([]Token, []helpers.ErrorInterface) {
-	sink := collectDiagnostics()
-	toks := tokenize(source, fn, custom, sink)
-	return toks, sink.items
+	return tokenize(source, fn, custom), nil
 }
 
 // TokenizeWith lexes source with the user-defined symbols in a project operator catalog.
@@ -120,90 +63,30 @@ func TokenizeCollecting(source string, fn string, custom *CustomOperators) ([]To
 // whether a catalogued spelling is visible at a use site. Tokenize is the same call with
 // no custom operators, which consumers that do not need project operators use.
 func TokenizeWith(source string, fn string, custom *CustomOperators) []Token {
-	return tokenize(source, fn, custom, nil)
+	return tokenize(source, fn, custom)
 }
 
-// tokenize is the scanning loop shared by the exported entry points.
-//
-// sink selects the diagnostic policy; see diagnosticSink. A nil sink is the
-// batch path and stops the process at the first diagnostic. Any non-nil sink
-// keeps scanning, which is what guarantees a surviving caller a complete token
-// stream for a malformed file.
-func tokenize(source string, fn string, custom *CustomOperators, sink *diagnosticSink) []Token {
-	if err := validateSourceEncoding(source, fn); err != nil {
-		if sink == nil {
-			// The batch path: HandleErrors does not return.
-			foerrors.HandleErrors(err)
-			return nil
-		}
-		if sink.retain {
-			sink.items = append(sink.items, err)
-		}
-		// A surviving caller keeps its token stream. The offending byte is
-		// reached again by the scan loop below, which reports and consumes it,
-		// so scanning still terminates.
-	}
-
-	// DECISION-LEX-001: a U+FEFF byte-order mark is permitted only as the first code
-	// point. Removing it here accepts the editors that emit one; anywhere else the
-	// character has already been rejected by the complete-source validation above.
-	source = strings.TrimPrefix(source, utf8BOM)
-
-	lex := createLexer(source, fn)
-	lex.custom = custom
-	lex.sink = sink
+// tokenize drains the lazy lexer for the legacy slice APIs, then applies their
+// historical whole-stream folding passes.
+func tokenize(source string, fn string, custom *CustomOperators) []Token {
+	lazyLexer := newLexer([]byte(source), fn, custom)
+	lex := lazyLexer.inner
 	if DEBUG_TRACE {
 		defer lex.debugTraceEnd(lex.debugTraceBegin("tokenize", INVALID, ""))
 	}
 
-	for !lex.at_eof() {
-		if length, message, unsupported := detectUnsupportedAlphaLiteral(lex.remainder()); unsupported {
-			if lex.surviving() {
-				lex.report(lex.errorObj(nil, message))
-				lex.advanceN(length)
-				continue
-			}
-			rejectUnsupportedAlphaLiteral(lex, length, message)
-			continue
-		}
-
-		src := lex.remainder()
-		result, ok := lex.scanToken(src)
-		if !ok {
-			lex.report(lex.errorObj(nil, fmt.Sprintf("lexer error: unrecognized token near '%v'", src)))
-			// Only a surviving caller gets here; the batch path stopped inside
-			// report. Consuming the byte guarantees forward progress.
-			lex.advanceN(1)
-			continue
-		}
-
-		switch result.action {
-		case actionNewline:
-			lex.emitNewline(src[:result.length])
-		case actionSkip:
-			lex.advanceN(result.length)
-			if result.lines > 0 {
-				lex.advanceline(result.lines)
-				lex.col = result.endColumn
-			}
-		case actionError:
-			start := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
-			lex.advanceN(result.length)
-			if result.lines > 0 {
-				lex.advanceline(result.lines)
-				lex.col = result.endColumn
-			}
-			end := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
-			// The span has already been consumed above, so a surviving caller
-			// resumes at the next token whatever this diagnostic was.
-			lex.report(lex.errorException(result.message, result.errType, *start, *end))
-		default:
-			lex.emitToken(result.kind, src[:result.length])
+	// Keep the historical slice API as an adapter over the lazy scanner. The
+	// parser-facing TokenStream does not materialize this complete slice.
+	tokens := make([]Token, 0)
+	for {
+		token := lazyLexer.nextToken()
+		tokens = append(tokens, token)
+		if token.Kind == EOF {
+			break
 		}
 	}
-	startPos := helpers.NewPosition(1, 0, 1, 0, "", "", false)
-	endPos := helpers.NewPosition(1, 0, 1, 0, "", "", false)
-	lex.push(newUniqueToken(EOF, "EOF", startPos, endPos))
+	lex.Tokens = tokens
+	lex.currentPos = 0
 	cleanupLB(lex)
 	foldTokens(lex)
 	foldSpecialStatementBuiltins(lex)
@@ -237,70 +120,6 @@ func logicalFoldedName(name string) string {
 	return strings.TrimSuffix(logical, "_fo")
 }
 
-// validateSourceEncoding checks the complete byte stream before comments and
-// literals can hide malformed input from ordinary token recognition. A single
-// leading BOM is metadata and is not counted as a source column; every later
-// U+FEFF is a lexical error, including one immediately following that BOM.
-func validateSourceEncoding(source, fn string) helpers.ErrorInterface {
-	offset := 0
-	lineStart := 0
-	if strings.HasPrefix(source, utf8BOM) {
-		offset = len(utf8BOM)
-		lineStart = offset
-	}
-
-	line, column := 1, 1
-	for offset < len(source) {
-		r, size := utf8.DecodeRuneInString(source[offset:])
-		if r == utf8.RuneError && size == 1 {
-			return sourceEncodingError(
-				source, fn, offset, lineStart, line, column, 1,
-				fmt.Sprintf("invalid UTF-8 byte sequence at byte %d", offset+1),
-			)
-		}
-		if r == '\uFEFF' {
-			return sourceEncodingError(
-				source, fn, offset, lineStart, line, column, size,
-				fmt.Sprintf("U+FEFF is permitted only once as an optional leading byte-order mark (found at byte %d)", offset+1),
-			)
-		}
-
-		offset += size
-		switch r {
-		case '\r':
-			if offset < len(source) && source[offset] == '\n' {
-				offset++
-			}
-			line++
-			column = 1
-			lineStart = offset
-		case '\n':
-			line++
-			column = 1
-			lineStart = offset
-		default:
-			// Scanner positions are byte-oriented, so diagnostic columns follow
-			// the same convention and continue to align with source slices.
-			column += size
-		}
-	}
-	return nil
-}
-
-func sourceEncodingError(source, fn string, offset, lineStart, line, column, width int, message string) helpers.ErrorInterface {
-	// The trace variables are named apart from the parameters on purpose: a ":="
-	// here that reused `line` would rebind the SOURCE line being reported to this
-	// Go file's own line number, and every encoding diagnostic would point at
-	// tokenizer.go instead of at the offending line of FoLang source.
-	lineEnd := lineStart
-	for lineEnd < len(source) && source[lineEnd] != '\r' && source[lineEnd] != '\n' {
-		lineEnd++
-	}
-	lineText := source[lineStart:lineEnd]
-	start := helpers.NewPosition(offset, line, column, offset, fn, lineText, false)
-	end := helpers.NewPosition(offset+width, line, column+width, offset+width, fn, lineText, false)
-	return helpers.NewInvalidSyntaxError(*start, *end, message)
-}
 func cleanupLB(lex *lexer) []Token {
 	nTokens := make([]Token, 0)
 	for {
@@ -331,51 +150,29 @@ func foldTokens(lex *lexer) []Token {
 		}
 
 		Token_ := lex.currentToken()
-
 		tempToken = Token_.Value
-		//Token_.Println()
-
 		lastToken = ""
 		length := 1
-		lstTokens := []Token{}
-		lstTokens = append(lstTokens, Token_)
+		lstTokens := []Token{Token_}
+
 		if Token_.Kind == IDENTIFIER || Token_.Kind == KEYWORD || Token_.Kind == RESERVEDWORD || Token_.Kind == CONTEXT_KEYWORD || Token_.Kind == ATDAP {
-
-			/*
-				if Token_.Kind == KEYWORD || Token_.Kind == RESERVEDWORD {
-					if _, ok := Operator_details[lex.lookBack(1).Kind]; ok {
-						if !Contains(AllowedOps, lex.lookBack(1).Kind) {
-							tTok := newUniqueToken(NONKEYRESERVEDWORD, "****", Token_.StartPos, Token_.EndPos)
-							err_ := lex.errorObj(&tTok, "Operator should not precede KeyWord/ReservedWord ")
-							foerrors.HandleErrors(err_)
-						}
-
+			if (Token_.Kind == KEYWORD || Token_.Kind == RESERVEDWORD || Token_.Kind == CONTEXT_KEYWORD) &&
+				lex.lookAhead(1).Kind == DOT && slices.Contains(UnsupportedObjects, Token_.Value) {
+				if _, hasKeywordMethods := KeyWords_me[Token_.Value]; hasKeywordMethods {
+					part := lex.lookAhead(2)
+					unknown := Token_
+					unknown.Kind = UNKNOWN
+					unknown.Value += "." + part.Value
+					if part.EndPos != nil {
+						unknown.EndPos = part.EndPos.Copy()
 					}
-				}
-			*/
-			if Token_.Kind == KEYWORD || Token_.Kind == RESERVEDWORD || Token_.Kind == CONTEXT_KEYWORD {
-				if lex.lookAhead(1).Kind == DOT {
-					check := false
-					for _, val := range UnsupportedObjects {
-						if Token_.Value == val {
-							check = true
-							break
-						}
-					}
-					if arr, ok := KeyWords_me[Token_.Value]; ok && check {
-						for _, v := range arr {
-							if lex.lookAhead(2).Value == v {
-								err_ := lex.errorObj(&Token_, "Ah. eventhough it is a valid statement currently we are not supporting it please use decorator kind or type kind things ")
-								foerrors.HandleErrors(err_)
-							} else {
-								err_ := lex.errorObj(&Token_, "Invalid method/stmt after KeyWord/ReservedWord ")
-								foerrors.HandleErrors(err_)
-
-							}
-						}
-					}
+					nTokens = append(nTokens, unknown)
+					lex.currentPos += 2
+					lex.moveNext()
+					continue
 				}
 			}
+
 			for lex.lookAhead(1).Kind == DOT {
 
 				if lex.lookAhead(2).Kind == IDENTIFIER || lex.lookAhead(2).Kind == KEYWORD || lex.lookAhead(2).Kind == RESERVEDWORD || lex.lookAhead(2).Kind == CONTEXT_KEYWORD || lex.lookAhead(2).Kind == BUILT_IN_METHOD {
@@ -752,6 +549,7 @@ func (lex *lexer) advanceN(n int) {
 }
 func (lex *lexer) advanceline(n int) {
 	lex.line += n
+	lex.invalidateCurrentLineText()
 	//lex.pos += n
 	lex.col = 0
 }
@@ -819,41 +617,11 @@ func (lex *lexer) at_eof() bool {
 	return lex.pos >= len(lex.source)
 }
 
-// USE FSM instead of regex
-func sourceLines(source string) []string {
-	if source == "" {
-		return nil
-	}
-	sar1 := strings.Split(source, "\r\n")
-
-	var sar2 []string = []string{}
-	if len(sar1) >= 1 {
-		for _, line := range sar1 {
-			sar2 = append(sar2, strings.Split(line, "\n\r")...)
-		}
-	}
-	sar1 = []string{}
-	if len(sar2) >= 1 {
-		for _, line := range sar2 {
-			sar1 = append(sar1, strings.Split(line, "\n")...)
-		}
-	}
-	sar2 = []string{}
-	if len(sar1) >= 1 {
-		for _, line := range sar1 {
-			sar2 = append(sar2, strings.Split(line, "\r")...)
-		}
-	}
-	return sar2
-
-}
-
 func createLexer(source string, fn string) *lexer {
 	return &lexer{
 		pos:        0,
 		line:       1,
 		source:     source,
-		sourcearr:  sourceLines(source),
 		currentPos: 0,
 		fn:         fn,
 		col:        1,

@@ -196,6 +196,7 @@ const (
 	CARET_EQGT //116
 	ARROW_PIPE //117
 	EQ_GT      //118
+	UNKNOWN    //119
 
 )
 
@@ -250,6 +251,10 @@ var Reserved_lu map[string]TokenKind = map[string]TokenKind{
 	"let":  KEYWORD,      //let bindings and let recursions
 	"fΦλ":  RESERVEDWORD, // fo-lang reserved word
 }
+
+// UnsupportedObjects lists keywords whose dotted forms must remain visible to
+// the parser as one UNKNOWN lexeme instead of being folded as identifiers.
+var UnsupportedObjects = []string{"let"}
 
 // KeyWords_me maps each keyword to its valid dot-accessible sub-identifiers.
 // Compiler-owned `this` selectors use `this->name` and are parsed contextually;
@@ -771,6 +776,8 @@ func TokenKindString(kind TokenKind) string {
 		return "Non KeyWord/Reserved Word"
 	case INVALID:
 		return "InValid "
+	case UNKNOWN:
+		return "UNKNOWN"
 
 	// The remaining kinds were missing a name, so every one of them printed as
 	// `unknown(N)`. That is only cosmetic in a diagnostic, but the debug trace
@@ -793,7 +800,7 @@ func TokenKindString(kind TokenKind) string {
 		return "pow"
 	case HASH:
 		return "hash"
-	case DOLLAR:
+	case CONTEXT_SIGIL_DOLLAR:
 		return "dollar"
 	case TILD:
 		return "tilde"

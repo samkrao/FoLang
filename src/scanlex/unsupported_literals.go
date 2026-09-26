@@ -2,8 +2,6 @@ package scanlex
 
 import (
 	"strings"
-
-	"github.com/samkrao/fo-lang/src/helpers"
 )
 
 // detectUnsupportedAlphaLiteral recognizes complete literal spellings reserved
@@ -113,13 +111,4 @@ func scanRawStringLiteral(source string) (int, bool) {
 		return len(source), true
 	}
 	return openParen + 1 + closeOffset + len(closing), true
-}
-
-// rejectUnsupportedAlphaLiteral advances over the complete recognized spelling
-// before raising one unsupported-feature error.
-func rejectUnsupportedAlphaLiteral(lex *lexer, length int, message string) {
-	start := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-	lex.advanceN(length)
-	end := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.sourcearr[lex.line-1], false)
-	lex.report(lex.errorException(message, helpers.UnSupported, *start, *end))
 }

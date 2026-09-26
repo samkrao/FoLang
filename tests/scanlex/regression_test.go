@@ -26,15 +26,14 @@ func TestBlockCommentPreservesTrailingLineAndColumn(t *testing.T) {
 	}
 }
 
-func TestMalformedAbbreviatedFloatsAreScannerDiagnostics(t *testing.T) {
+func TestMalformedAbbreviatedFloatsBecomeUnknownTokens(t *testing.T) {
 	for _, source := range []string{"1.", "0x1.p3", "0x.8p3"} {
 		t.Run(source, func(t *testing.T) {
-			defer func() {
-				if recovered := recover(); recovered != "Error" {
-					t.Fatalf("Tokenize(%q) recovered %#v, want diagnostic panic %q", source, recovered, "Error")
-				}
-			}()
-			scanlex.Tokenize(source, "test")
+			tokens := meaningful(scanlex.Tokenize(source, "test"))
+			if len(tokens) == 0 {
+				t.Fatal("expected UNKNOWN token")
+			}
+			assertKindValue(t, tokens[0], scanlex.UNKNOWN, source)
 		})
 	}
 }
