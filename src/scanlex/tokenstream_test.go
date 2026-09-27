@@ -74,6 +74,30 @@ func TestTokenStreamPeekPastEOFStopsScanning(t *testing.T) {
 	}
 }
 
+func TestTokenStreamAtEOFSupportsIterationWithoutConsuming(t *testing.T) {
+	stream := NewTokenStream([]byte("alpha beta"), "test.fol")
+	var values []string
+	for !stream.AtEOF() {
+		values = append(values, stream.Next().Value)
+	}
+
+	want := []string{"alpha", " ", "beta"}
+	if len(values) != len(want) {
+		t.Fatalf("iteration returned %d tokens, want %d: %v", len(values), len(want), values)
+	}
+	for i := range want {
+		if values[i] != want[i] {
+			t.Fatalf("token %d = %q, want %q", i, values[i], want[i])
+		}
+	}
+	if len(stream.history) != len(want) {
+		t.Fatalf("AtEOF changed history: got %d consumed tokens, want %d", len(stream.history), len(want))
+	}
+	if !stream.AtEOF() || stream.Next().Kind != EOF {
+		t.Fatal("EOF was not stable after iteration")
+	}
+}
+
 func TestTokenStreamPreviousTracksOnlyConsumedTokens(t *testing.T) {
 	stream := NewTokenStream([]byte("alpha beta gamma"), "test.fol")
 
@@ -200,6 +224,43 @@ func TestFoldTokensRecognizesOperatorSourceAndPreservesFullSpan(t *testing.T) {
 	}
 	if got.StartPos == nil || got.EndPos == nil || got.StartPos.Idx != 0 || got.EndPos.Idx != len(got.Value) {
 		t.Fatalf("folded span = %#v..%#v, want byte range 0..%d", got.StartPos, got.EndPos, len(got.Value))
+	}
+}
+
+func TestFoldTokensClassifiesThisReceiverPaths(t *testing.T) {
+	stream := NewTokenStream([]byte("this.field this.kind () this->parents this->classes[0] this->parent::new() this -> parents"), "test.fol")
+	want := []struct {
+		kind    TokenKind
+		subKind SubKind
+		value   string
+	}{
+		{BUILT_INS_FOL, STATEMENT_EXPR, "this.field"},
+		{BUILT_INS_FOL, METHOD, "this.kind"},
+		{OPEN_PAREN, NA, "("},
+		{CLOSE_PAREN, NA, ")"},
+		{BUILT_INS_FOL, STATEMENT_EXPR, "this->parents"},
+		{BUILT_INS_FOL, STATEMENT_EXPR, "this->classes"},
+		{OPEN_BRACKET, NA, "["},
+		{NUMBER, NA, "0"},
+		{CLOSE_BRACKET, NA, "]"},
+		{BUILT_INS_FOL, STATEMENT_EXPR, "this->parent"},
+		{BUILT_INS_FOL, OPERATORS, "::"},
+		{IDENTIFIER, NA, "new"},
+		{OPEN_PAREN, NA, "("},
+		{CLOSE_PAREN, NA, ")"},
+		{KEYWORD, NA, "this"},
+		{BUILT_INS_FOL, OPERATORS, "->"},
+		{IDENTIFIER, NA, "parents"},
+		{EOF, NA, "EOF"},
+	}
+
+	for i, expected := range want {
+		got := nextNonWhitespace(stream)
+		if got.Kind != expected.kind || got.SubKind != expected.subKind || got.Value != expected.value {
+			t.Fatalf("token %d = (%v, %v, %q), want (%v, %v, %q)",
+				i, got.Kind, got.SubKind, got.Value,
+				expected.kind, expected.subKind, expected.value)
+		}
 	}
 }
 

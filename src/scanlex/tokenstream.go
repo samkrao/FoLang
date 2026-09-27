@@ -141,6 +141,12 @@ func (stream *TokenStream) Peek(n int) Token {
 	return stream.eof
 }
 
+// AtEOF reports whether EOF is the next parser-facing token. It may scan and
+// buffer the next token, but it never consumes it or changes token history.
+func (stream *TokenStream) AtEOF() bool {
+	return stream.Peek(0).Kind == EOF
+}
+
 // Next returns and consumes the next token.
 func (stream *TokenStream) Next() Token {
 	stream.ensure(1)
@@ -281,20 +287,51 @@ func (stream *TokenStream) foldDotted(first Token) (Token, string) {
 	return last, value.String()
 }
 
+func (stream *TokenStream) foldThisPath(first Token) (Token, string, bool) {
+	if stream.rawStartsDottedSegment(first) {
+		last, value := stream.foldDotted(first)
+		return last, value, true
+	}
+	if !stream.rawStartsArrowSegment(first) {
+		return first, first.Value, false
+	}
+
+	arrow := stream.nextRaw()
+	segment := stream.nextRaw()
+	value := first.Value + arrow.Value + segment.Value
+	last := segment
+	if stream.rawStartsDottedSegment(last) {
+		tailLast, tailValue := stream.foldDotted(last)
+		value += tailValue[len(last.Value):]
+		last = tailLast
+	}
+	return last, value, true
+}
+
 func (stream *TokenStream) rawStartsDottedSegment(after Token) bool {
+	return stream.rawStartsSeparatedSegment(after, ".", DOT)
+}
+
+func (stream *TokenStream) rawStartsArrowSegment(after Token) bool {
+	return stream.rawStartsSeparatedSegment(after, "->", ARROW)
+}
+
+func (stream *TokenStream) rawStartsSeparatedSegment(after Token, separator string, kind TokenKind) bool {
 	if stream == nil || stream.lexer == nil || after.EndPos == nil {
 		return false
 	}
 	end := after.EndPos.Idx
-	if end < 0 || end+1 >= len(stream.lexer.source) || stream.lexer.source[end] != '.' ||
-		!isAlpha(stream.lexer.source[end+1]) {
+	segmentStart := end + len(separator)
+	if end < 0 || segmentStart >= len(stream.lexer.source) ||
+		!strings.HasPrefix(stream.lexer.source[end:], separator) ||
+		!isAlpha(stream.lexer.source[segmentStart]) {
 		return false
 	}
 
-	dot := stream.peekRaw(0)
+	separatorToken := stream.peekRaw(0)
 	segment := stream.peekRaw(1)
-	return dot.Kind == DOT && tokensAdjacent(after, dot) &&
-		(segment.Kind == IDENTIFIER || segment.Kind == KEYWORD) && tokensAdjacent(dot, segment)
+	return separatorToken.Kind == kind && tokensAdjacent(after, separatorToken) &&
+		(segment.Kind == IDENTIFIER || segment.Kind == KEYWORD) && tokensAdjacent(separatorToken, segment)
 }
 
 func (stream *TokenStream) rawByteAtEnd(token Token) byte {

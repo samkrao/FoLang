@@ -21,8 +21,12 @@ func main() {
 	var fname *string = new(string)
 	*fname = ""
 
+	var tokenizeonly *bool = new(bool)
+	*binary = false
+
 	binary = parser.Flag("b", "Binary", &argparse.Options{Required: false, Help: "Generate wire format or not"})
 	fname = parser.String("f", "filename", &argparse.Options{Required: false, Help: "File name"})
+	tokenizeonly = parser.Flag("t", "tokonly", &argparse.Options{Required: false, Help: "tokenize only"})
 
 	err := parser.Parse(args)
 
@@ -48,9 +52,18 @@ func main() {
 		os.Exit(1)
 
 	}
+
 	if status == "success" {
 		symbols := preparser.PreParse(installDir, *fname)
 		stream := scanlex.NewTokenStream(source, file)
+
+		if *tokenizeonly {
+			for !stream.AtEOF() {
+				fmt.Println(stream.Next())
+			}
+			os.Exit(0)
+		}
+
 		parser := preparser.Init(*fname, installDir, symbols, stream)
 		ast := parser.Parse()
 

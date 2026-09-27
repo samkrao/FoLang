@@ -187,6 +187,19 @@ func foldTokens(stream *TokenStream) Token {
 		return refold(first, last, BUILT_INS_FOL, subKind, value)
 	}
 
+	// this.member and compiler-owned this->member receiver paths use the same
+	// parser-facing classification as co paths. The parser still validates which
+	// arrow attributes are legal in the current declaration context.
+	if first.Kind == KEYWORD && first.Value == "this" {
+		if last, value, ok := stream.foldThisPath(first); ok {
+			subKind := STATEMENT_EXPR
+			if stream.followedByCall(last) {
+				subKind = METHOD
+			}
+			return refold(first, last, BUILT_INS_FOL, subKind, value)
+		}
+	}
+
 	// A label declaration is an apostrophe-prefixed identifier immediately
 	// followed by a colon. The colon remains a separate parser-facing token.
 	if first.Kind == SINGLE_QUOTE && stream.rawByteAtEnd(first) == ':' {
