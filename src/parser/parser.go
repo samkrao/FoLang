@@ -19,3 +19,7 @@ func (parser Parser) Parse() ast.SET {
 
 	return ast.Definition{}
 }
+
+func (parser Parser) ParseOperators() *symboltable.FolangSymbols {
+	return &symboltable.FolangSymbols{}
+}

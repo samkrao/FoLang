@@ -36,7 +36,21 @@ const (
 	Application Kind = "application"
 )
 
-func parseAndImportComponent(symbols *symboltable.FolangSymbols, projectDir string, kind_ Kind) {
+func parseAndImportComponent(symbols *symboltable.FolangSymbols, projectDir string, installDir string, kind_ Kind) {
+
+	path := filepath.Join(projectDir, "components", string(kind_), "component.fol")
+	source, status := fetchSourceByFile(path)
+	if status == "error" {
+		return
+	}
+	stream := scanlex.NewTokenStream(source, path, &symbols.Operators)
+
+	if kind_ == Operators {
+
+		parser := Init(projectDir, installDir, symbols, stream)
+		parser.ParseOperators()
+
+	}
 }
 
 /*
@@ -52,11 +66,11 @@ func PreParse(installDir string, projectDir string) *symboltable.FolangSymbols {
 
 	importStdLibraries(symbols, installDir)
 	importLibraries(symbols, projectDir)
-	parseAndImportComponent(symbols, projectDir, Operators)
-	parseAndImportComponent(symbols, projectDir, Packaged)
-	parseAndImportComponent(symbols, projectDir, Application)
-	parseAndImportComponent(symbols, projectDir, Native)
-	parseAndImportComponent(symbols, projectDir, Dynamicvmrt)
+	parseAndImportComponent(symbols, projectDir, installDir, Operators)
+	parseAndImportComponent(symbols, projectDir, installDir, Packaged)
+	parseAndImportComponent(symbols, projectDir, installDir, Application)
+	parseAndImportComponent(symbols, projectDir, installDir, Native)
+	parseAndImportComponent(symbols, projectDir, installDir, Dynamicvmrt)
 	return symbols
 }
 
@@ -71,6 +85,14 @@ func validateFolder(path string) (error, bool) {
 	}
 
 	return nil, true
+}
+
+func fetchSourceByFile(filePath string) ([]byte, string) {
+	sourceBytes, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, "error"
+	}
+	return normalizeSourceBytes(sourceBytes), "success"
 }
 func FetchSource(projectRoot string) (string, []byte, string) {
 
@@ -105,5 +127,5 @@ func FetchSource(projectRoot string) (string, []byte, string) {
 	if err != nil {
 		return "", nil, "fileread"
 	}
-	return filenames[0], sourceBytes, "success"
+	return filenames[0], normalizeSourceBytes(sourceBytes), "success"
 }
