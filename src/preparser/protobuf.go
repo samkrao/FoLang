@@ -2,9 +2,9 @@ package preparser
 
 import symboltable "github.com/samkrao/fo-lang/src/context"
 
-func Deserialize(filename string) ([]byte, string) {
+func Deserialize(filename string) (symboltable.FolangSymbols, string) {
 
-	return nil, "error"
+	return symboltable.FolangSymbols{}, "error"
 }
 
 func Serialize(symbols *symboltable.FolangSymbols, filename string) {

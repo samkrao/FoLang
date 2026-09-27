@@ -1,6 +1,7 @@
 package preparser
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"slices"
@@ -104,6 +105,8 @@ func PreParse(installDir string, projectDir string) *symboltable.FolangSymbols {
 	symbols := &symboltable.FolangSymbols{}
 	symbols.CreateFolangSymbols()
 
+	fetchBackendConf(installDir, symbols)
+
 	importStdLibraries(symbols, installDir)
 	importLibraries(symbols, projectDir)
 	parseAndImportComponent(symbols, projectDir, installDir, Operators)
@@ -112,6 +115,26 @@ func PreParse(installDir string, projectDir string) *symboltable.FolangSymbols {
 	parseAndImportComponent(symbols, projectDir, installDir, Native)
 	parseAndImportComponent(symbols, projectDir, installDir, Dynamicvmrt)
 	return symbols
+}
+
+func fetchBackendConf(installDir string, symbols *symboltable.FolangSymbols) error {
+
+	path := filepath.Join(installDir, "conf", "backend-conf.json")
+
+	if _, err := os.Stat(path); err != nil {
+		return err
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(data, &symbols.BackendConf); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func validateFolder(path string) (error, bool) {

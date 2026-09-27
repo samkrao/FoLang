@@ -28,6 +28,13 @@ const (
 	MixedCallSite            ResolutionPolicy = "mixed_call_site"
 )
 
+type BackendConfig struct {
+	Protocol          string `json:"protocol"`
+	HIRSchema         string `json:"hir_schema"`
+	Wire              string `json:"wire"`
+	RuntimeOperations string `json:"runtime_operations"`
+}
+
 // SymbolTable represents a hierarchical chain of symbol mappings within a context.
 
 type FolangSymbols struct {
@@ -36,6 +43,7 @@ type FolangSymbols struct {
 	ContextMap     map[ContextID]ContextInfo
 	SymbolsById    map[SymbolID]SymbolInfo
 	Operators      OperatorRegistry
+	BackendConf    BackendConfig
 }
 
 type OperatorRegistry struct {
