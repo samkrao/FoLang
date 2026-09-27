@@ -1083,9 +1083,38 @@ func (s CallExpr) Kind() string {
 	return "CallExpr"
 }
 
-// x co.operator={}
+type OperatorFixity string
+type OperatorAssociativity string
+type OperatorArity string
+
+const (
+	OperatorPrefix  OperatorFixity = "prefix"
+	OperatorInfix   OperatorFixity = "infix"
+	OperatorPostfix OperatorFixity = "postfix"
+
+	OperatorLeft  OperatorAssociativity = "left"
+	OperatorRight OperatorAssociativity = "right"
+	OperatorNone  OperatorAssociativity = "none"
+
+	OperatorUnary  OperatorArity = "unary"
+	OperatorBinary OperatorArity = "binary"
+)
+
+// OperatorSymbol is one completely parsed application-global co.operator
+// declaration. The registry key carries its symbolic spelling.
 type OperatorSymbol struct {
 	SymbolDetails
+	Fixity          OperatorFixity
+	Precedence      int
+	Associativity   OperatorAssociativity
+	Arity           OperatorArity
+	Commutative     bool
+	Idempotent      bool
+	Identity        string
+	Foldable        bool
+	Vectorizable    bool
+	DistributesOver []string
+	Desugar         string
 }
 
 func (s OperatorSymbol) Kind() string {

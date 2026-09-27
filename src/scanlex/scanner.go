@@ -326,13 +326,16 @@ func (lex *lexer) scanSymbolicRun(src string) (scanned, bool) {
 	if languagePredeclaredOperatorSpellings[run] {
 		return emit(BUILT_INS_FOL, OPERATORS, length), true
 	}
-	if fixity, ok := lex.custom.match(run); ok {
-		before := explicitSymbolBoundaryBefore(lex.source, lex.pos)
-		after := explicitSymbolBoundaryAfter(lex.source, lex.pos+length)
-		if utf8.RuneCountInString(run) > 1 && !boundariesSatisfyFixity(fixity, before, after) {
-			return scanned{action: actionUnknown, length: length}, true
+	if lex.operators != nil {
+		fixity, ok := lex.operators.LookupOperator(run)
+		if ok {
+			before := explicitSymbolBoundaryBefore(lex.source, lex.pos)
+			after := explicitSymbolBoundaryAfter(lex.source, lex.pos+length)
+			if utf8.RuneCountInString(run) > 1 && !boundariesSatisfyFixity(fixity, before, after) {
+				return scanned{action: actionUnknown, length: length}, true
+			}
+			return emit(CUSTOM_OPERATOR, NA, length), true
 		}
-		return emit(CUSTOM_OPERATOR, NA, length), true
 	}
 	if len(run) >= 3 && strings.Trim(run, "*") == "" {
 		return emit(STAR, NA, length), true

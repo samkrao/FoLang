@@ -57,8 +57,7 @@ func main() {
 		}
 
 		symbols := preparser.PreParse(installDir, *fname)
-
-		stream := scanlex.NewTokenStream(source, file)
+		stream := scanlex.NewTokenStream(source, file, &symbols.Operators)
 
 		if *tokenizeonly {
 			for {
@@ -80,7 +79,9 @@ func main() {
 		} else if status == "both" {
 			fmt.Print("Project should be either Library or Application cannot be both ")
 		} else if status == "fileread" {
-			fmt.Print("FileRead Error")
+			fmt.Print("Entry file or Library Surface File not found")
+		} else if status == "projectrootfolder" {
+			fmt.Println("Not a Project Root folder")
 		} else {
 			fmt.Print("Unknown Error")
 		}

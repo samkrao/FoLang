@@ -1,6 +1,8 @@
 // Package symboltable provides symbol table and context management for the fo-lang compiler.
 package symboltable
 
+import "fmt"
+
 // ResolutionPolicy is the closed frontend resolver-policy vocabulary defined by
 // docs/language-ref.md Appendix B.5. It remains string-backed so serialized AST
 // artifacts retain the specified spellings.
@@ -33,6 +35,51 @@ type FolangSymbols struct {
 	SymboltableMap map[SymbolTableID]*SymbolTable
 	ContextMap     map[ContextID]ContextInfo
 	SymbolsById    map[SymbolID]SymbolInfo
+	Operators      OperatorRegistry
+}
+
+type OperatorRegistry struct {
+	BySpelling map[string]*OperatorSymbol
+}
+
+// Register adds one completely parsed application operator declaration. An
+// operator spelling is application-global and therefore may be registered only
+// once, irrespective of the package containing an ordinary use site.
+func (registry *OperatorRegistry) Register(spelling string, operator *OperatorSymbol) error {
+	if spelling == "" {
+		return fmt.Errorf("operator spelling cannot be empty")
+	}
+	if operator == nil {
+		return fmt.Errorf("operator %q has no declaration", spelling)
+	}
+	if registry.BySpelling == nil {
+		registry.BySpelling = make(map[string]*OperatorSymbol)
+	}
+	if _, exists := registry.BySpelling[spelling]; exists {
+		return fmt.Errorf("operator %q is already registered", spelling)
+	}
+	registry.BySpelling[spelling] = operator
+	return nil
+}
+
+// Lookup returns the application-global operator declaration for spelling.
+func (registry *OperatorRegistry) Lookup(spelling string) (*OperatorSymbol, bool) {
+	if registry == nil {
+		return nil, false
+	}
+	operator, ok := registry.BySpelling[spelling]
+	return operator, ok
+}
+
+// LookupOperator exposes only spelling and fixity to lexical consumers. It
+// satisfies scanlex.OperatorLookup structurally without coupling context to the
+// scanlex package.
+func (registry *OperatorRegistry) LookupOperator(spelling string) (string, bool) {
+	operator, ok := registry.Lookup(spelling)
+	if !ok || operator == nil {
+		return "", false
+	}
+	return string(operator.Fixity), true
 }
 
 type ContextKind string
@@ -80,6 +127,7 @@ func (fs *FolangSymbols) CreateFolangSymbols() {
 	fs.SymboltableMap = make(map[SymbolTableID]*SymbolTable)
 	fs.ContextMap = make(map[ContextID]ContextInfo)
 	fs.SymbolsById = make(map[SymbolID]SymbolInfo)
+	fs.Operators.BySpelling = make(map[string]*OperatorSymbol)
 }
 
 // RegisterSymbol stores the canonical symbol record addressed by its durable ID.

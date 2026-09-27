@@ -2,9 +2,19 @@ package scanlex
 
 import "testing"
 
+var emptyTestOperators = NewCustomOperatorsWithSpecs(nil)
+
+func TestNewTokenStreamTreatsNilOperatorRegistryAsEmpty(t *testing.T) {
+	stream := NewTokenStream([]byte("%%"), "test.fol", nil)
+	token := stream.Next()
+	if token.Kind != UNKNOWN || token.Value != "%%" {
+		t.Fatalf("token = (%v, %q), want UNKNOWN %q", token.Kind, token.Value, "%%")
+	}
+}
+
 func TestTokenStreamPeekBuffersOnlyRequestedLookahead(t *testing.T) {
 	const source = "alpha beta gamma delta"
-	stream := NewTokenStream([]byte(source), "test.fol")
+	stream := NewTokenStream([]byte(source), "test.fol", emptyTestOperators)
 
 	if got := stream.Peek(0); got.Value != "alpha" {
 		t.Fatalf("Peek(0) = %q, want alpha", got.Value)
@@ -28,7 +38,7 @@ func TestTokenStreamPeekBuffersOnlyRequestedLookahead(t *testing.T) {
 }
 
 func TestTokenStreamNextBuffersOneToken(t *testing.T) {
-	stream := NewTokenStream([]byte("alpha beta"), "test.fol")
+	stream := NewTokenStream([]byte("alpha beta"), "test.fol", emptyTestOperators)
 
 	if got := stream.Next(); got.Value != "alpha" {
 		t.Fatalf("first Next() = %q, want alpha", got.Value)
@@ -58,7 +68,7 @@ func TestTokenStreamNextBuffersOneToken(t *testing.T) {
 }
 
 func TestTokenStreamPeekPastEOFStopsScanning(t *testing.T) {
-	stream := NewTokenStream([]byte("only"), "test.fol")
+	stream := NewTokenStream([]byte("only"), "test.fol", emptyTestOperators)
 
 	if got := stream.Peek(10); got.Kind != EOF {
 		t.Fatalf("Peek past EOF kind = %v, want EOF", got.Kind)
@@ -75,7 +85,7 @@ func TestTokenStreamPeekPastEOFStopsScanning(t *testing.T) {
 }
 
 func TestTokenStreamAtEOFSupportsIterationWithoutConsuming(t *testing.T) {
-	stream := NewTokenStream([]byte("alpha beta"), "test.fol")
+	stream := NewTokenStream([]byte("alpha beta"), "test.fol", emptyTestOperators)
 	var values []string
 	for !stream.AtEOF() {
 		values = append(values, stream.Next().Value)
@@ -133,7 +143,7 @@ func TestTokenKindString(t *testing.T) {
 }
 
 func TestTokenStreamPreviousTracksOnlyConsumedTokens(t *testing.T) {
-	stream := NewTokenStream([]byte("alpha beta gamma"), "test.fol")
+	stream := NewTokenStream([]byte("alpha beta gamma"), "test.fol", emptyTestOperators)
 
 	if _, ok := stream.Previous(1); ok {
 		t.Fatal("Previous(1) succeeded before a token was consumed")
@@ -173,7 +183,7 @@ func TestTokenStreamPreviousTracksOnlyConsumedTokens(t *testing.T) {
 }
 
 func TestTokenStreamPreviousRejectsNonPositiveLookbehind(t *testing.T) {
-	stream := NewTokenStream(nil, "test.fol")
+	stream := NewTokenStream(nil, "test.fol", emptyTestOperators)
 	defer func() {
 		if recover() == nil {
 			t.Fatal("Previous(0) did not panic")
@@ -183,7 +193,7 @@ func TestTokenStreamPreviousRejectsNonPositiveLookbehind(t *testing.T) {
 }
 
 func TestScannerPreservesTokenSubKinds(t *testing.T) {
-	stream := NewTokenStream([]byte("_ @@new $ $2 +"), "test.fol")
+	stream := NewTokenStream([]byte("_ @@new $ $2 +"), "test.fol", emptyTestOperators)
 	want := []struct {
 		kind    TokenKind
 		subKind SubKind
@@ -211,7 +221,7 @@ func TestScannerPreservesTokenSubKinds(t *testing.T) {
 
 func TestFoldTokensClassifiesParserFacingLexemes(t *testing.T) {
 	custom := NewCustomOperatorsWithSpecs([]OperatorSpec{{Symbol: "%%", Fixity: "infix"}})
-	stream := NewTokenStreamWithOperators([]byte(
+	stream := NewTokenStream([]byte(
 		"@co.dap.generic co.int co.out.println () 'outer: $ $12 @@custom _ + \u222a %% alpha.beta @pkg.meta",
 	), "test.fol", custom)
 
@@ -250,7 +260,7 @@ func TestFoldTokensClassifiesParserFacingLexemes(t *testing.T) {
 }
 
 func TestFoldTokensRecognizesOperatorSourceAndPreservesFullSpan(t *testing.T) {
-	stream := NewTokenStream([]byte("co.operator.fixity.infix"), "test.fol")
+	stream := NewTokenStream([]byte("co.operator.fixity.infix"), "test.fol", emptyTestOperators)
 	got := stream.Next()
 	if got.Kind != BUILT_INS_FOL || got.SubKind != OPERATOR_SOURCE || got.Value != "co.operator.fixity.infix" {
 		t.Fatalf("operator source = (%v, %v, %q), want BUILT_INS_FOL/OPERATOR_SOURCE",
@@ -262,7 +272,7 @@ func TestFoldTokensRecognizesOperatorSourceAndPreservesFullSpan(t *testing.T) {
 }
 
 func TestFoldTokensClassifiesThisReceiverPaths(t *testing.T) {
-	stream := NewTokenStream([]byte("this.field this.kind () this->parents this->classes[0] this->parent::new() this -> parents"), "test.fol")
+	stream := NewTokenStream([]byte("this.field this.kind () this->parents this->classes[0] this->parent::new() this -> parents"), "test.fol", emptyTestOperators)
 	want := []struct {
 		kind    TokenKind
 		subKind SubKind
@@ -299,7 +309,7 @@ func TestFoldTokensClassifiesThisReceiverPaths(t *testing.T) {
 }
 
 func TestFoldTokensDoesNotJoinAcrossComment(t *testing.T) {
-	stream := NewTokenStream([]byte("alpha/* separator */.beta"), "test.fol")
+	stream := NewTokenStream([]byte("alpha/* separator */.beta"), "test.fol", emptyTestOperators)
 	first := stream.Next()
 	if first.Kind != IDENTIFIER || first.SubKind != NA || first.Value != "alpha" {
 		t.Fatalf("first token = (%v, %v, %q), want IDENTIFIER/NA alpha", first.Kind, first.SubKind, first.Value)
@@ -311,7 +321,7 @@ func TestFoldTokensDoesNotJoinAcrossComment(t *testing.T) {
 }
 
 func TestFoldTokensUsesNAForNonBuiltins(t *testing.T) {
-	stream := NewTokenStream([]byte("name 'label 42\n"), "test.fol")
+	stream := NewTokenStream([]byte("name 'label 42\n"), "test.fol", emptyTestOperators)
 	for {
 		token := stream.Next()
 		if token.Kind == EOF {
@@ -324,7 +334,7 @@ func TestFoldTokensUsesNAForNonBuiltins(t *testing.T) {
 }
 
 func TestFoldTokensKeepsInvalidLexemesUnknownAndWhole(t *testing.T) {
-	stream := NewTokenStream([]byte("$0 @@bad_ @co..thing bad__name"), "test.fol")
+	stream := NewTokenStream([]byte("$0 @@bad_ @co..thing bad__name"), "test.fol", emptyTestOperators)
 	want := []string{"$0", "@@bad_", "@co..thing", "bad__name"}
 	for i, value := range want {
 		token := nextNonWhitespace(stream)
@@ -345,7 +355,7 @@ func nextNonWhitespace(stream *TokenStream) Token {
 }
 
 func TestScannerCollectsSpacesAndNewlinesButSkipsComments(t *testing.T) {
-	stream := NewTokenStream([]byte("a \t// ignored\r\n\f b"), "test.fol")
+	stream := NewTokenStream([]byte("a \t// ignored\r\n\f b"), "test.fol", emptyTestOperators)
 	want := []struct {
 		kind  TokenKind
 		value string
@@ -367,7 +377,7 @@ func TestScannerCollectsSpacesAndNewlinesButSkipsComments(t *testing.T) {
 }
 
 func TestLineCommentsConsumeTheirNewlinesButBlankLinesRemain(t *testing.T) {
-	stream := NewTokenStream([]byte("// first\r\n// second\n\nx"), "test.fol")
+	stream := NewTokenStream([]byte("// first\r\n// second\n\nx"), "test.fol", emptyTestOperators)
 
 	newline := stream.Next()
 	if newline.Kind != NEWLINE || newline.Value != "\n" {
@@ -384,7 +394,7 @@ func TestLineCommentsConsumeTheirNewlinesButBlankLinesRemain(t *testing.T) {
 
 func TestScannerEOFUsesActualSourcePosition(t *testing.T) {
 	const source = "alpha\nbeta"
-	stream := NewTokenStream([]byte(source), "test.fol")
+	stream := NewTokenStream([]byte(source), "test.fol", emptyTestOperators)
 
 	for stream.Next().Kind != EOF {
 	}

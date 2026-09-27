@@ -3,12 +3,12 @@ package scanlex
 // lexer owns only source-scanning state. TokenStream owns parser-facing token
 // buffering, consumption, lookahead, and history.
 type lexer struct {
-	fn     string
-	custom *CustomOperators
-	source string
-	pos    int
-	line   int
-	col    int
+	fn        string
+	operators OperatorLookup
+	source    string
+	pos       int
+	line      int
+	col       int
 
 	finished bool
 	eof      Token

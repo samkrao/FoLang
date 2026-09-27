@@ -20,12 +20,10 @@ func Init(projectDir string, installDir string, symbols *symboltable.FolangSymbo
 	}
 }
 
-func importStdLibraries(installDir string) symboltable.FolangSymbols {
-	return symboltable.FolangSymbols{}
+func importStdLibraries(symbols *symboltable.FolangSymbols, installDir string) {
 }
 
-func importLibraries(projectDir string) symboltable.FolangSymbols {
-	return symboltable.FolangSymbols{}
+func importLibraries(symbols *symboltable.FolangSymbols, projectDir string) {
 }
 
 type Kind string
@@ -38,9 +36,7 @@ const (
 	Application Kind = "application"
 )
 
-func parseAndImportComponent(projectDir string, kind_ Kind) symboltable.FolangSymbols {
-
-	return symboltable.FolangSymbols{}
+func parseAndImportComponent(symbols *symboltable.FolangSymbols, projectDir string, kind_ Kind) {
 }
 
 /*
@@ -51,31 +47,38 @@ func parseAndImportComponent(projectDir string, kind_ Kind) symboltable.FolangSy
 		parse project-dir/components/<kind>/ symbols
 */
 func PreParse(installDir string, projectDir string) *symboltable.FolangSymbols {
-	importStdLibraries(installDir)
-	importLibraries(projectDir)
-	parseAndImportComponent(projectDir, Operators)
-	parseAndImportComponent(projectDir, Packaged)
-	parseAndImportComponent(projectDir, Application)
-	parseAndImportComponent(projectDir, Native)
-	parseAndImportComponent(projectDir, Dynamicvmrt)
-	return &symboltable.FolangSymbols{}
+	symbols := &symboltable.FolangSymbols{}
+	symbols.CreateFolangSymbols()
+
+	importStdLibraries(symbols, installDir)
+	importLibraries(symbols, projectDir)
+	parseAndImportComponent(symbols, projectDir, Operators)
+	parseAndImportComponent(symbols, projectDir, Packaged)
+	parseAndImportComponent(symbols, projectDir, Application)
+	parseAndImportComponent(symbols, projectDir, Native)
+	parseAndImportComponent(symbols, projectDir, Dynamicvmrt)
+	return symbols
 }
 
-func FetchSource(folderPath string) (string, []byte, string) {
-	info, err := os.Stat(folderPath)
+func validateFolder(path string) (error, bool) {
+	info, err := os.Stat(path)
 	if err != nil {
-		return "", nil, "fileread"
+		return err, false
 	}
+
 	if !info.IsDir() {
-		if filepath.Ext(folderPath) != ".fol" {
-			return "", nil, "fileread"
-		}
-		sourceBytes, err := os.ReadFile(folderPath)
-		if err != nil {
-			return "", nil, "fileread"
-		}
-		return folderPath, sourceBytes, "success"
+		return nil, false
 	}
+
+	return nil, true
+}
+func FetchSource(projectRoot string) (string, []byte, string) {
+
+	if _, k := validateFolder(projectRoot); !k {
+		return "", nil, "projectrootfolder"
+	}
+
+	folderPath := filepath.Join(projectRoot, "src")
 
 	entries, err := os.ReadDir(folderPath)
 	if err != nil {

@@ -111,17 +111,11 @@ type TokenStream struct {
 }
 
 // NewTokenStream creates the internal lexer and its lazy parser-facing buffer.
+// A nil operator registry is treated as an empty registry.
 // Constructing a stream copies source but does not scan it.
-func NewTokenStream(source []byte, fn string) *TokenStream {
-	return NewTokenStreamWithOperators(source, fn, nil)
-}
-
-// NewTokenStreamWithOperators creates a stream whose scanner recognizes the
-// supplied project-local operator spellings. Lexer construction remains an
-// internal implementation detail.
-func NewTokenStreamWithOperators(source []byte, fn string, custom *CustomOperators) *TokenStream {
+func NewTokenStream(source []byte, fn string, operators OperatorLookup) *TokenStream {
 	lexer := newLexer(source, fn)
-	lexer.custom = custom
+	lexer.operators = operators
 	return &TokenStream{
 		lexer: lexer,
 		eof:   Token{Kind: EOF, SubKind: NA, Value: "EOF"},

@@ -12,12 +12,14 @@ import (
 // project-local operator is supplied through the compilation's operator catalog
 // before ordinary source scanning begins.
 //
-// CustomOperators is the map that closes that gap. The parser builds it from the project
-// operator catalog before scanning a compilation unit and consults it at every position
-// where an operator could begin. Name resolution still decides whether a catalogued
-// operator is semantically visible at a particular use site; this lexical catalog only
-// classifies a valid project operator while preserving unknown runs for contextual
-// parser classification.
+// OperatorLookup is the only operator-registry capability the scanner needs.
+// A semantic registry can implement it directly, avoiding a copied lexer map.
+type OperatorLookup interface {
+	LookupOperator(spelling string) (fixity string, ok bool)
+}
+
+// CustomOperators is a standalone OperatorLookup for lexer-only callers and
+// tests that do not own a semantic operator registry.
 //
 // DECISION-LEX-003 makes the symbolic run, rather than the registry, the lexical
 // unit. A registered symbol therefore matches only when it equals the complete
@@ -76,13 +78,14 @@ func NewCustomOperatorsWithSpecs(specs []OperatorSpec) *CustomOperators {
 // the lookup entirely for the overwhelmingly common case.
 func (c *CustomOperators) Empty() bool { return c == nil || len(c.symbols) == 0 }
 
-// match returns the registered fixity only when run is an exact whole-symbol
-// match. Unknown runs are intentionally not split into shorter registered pieces.
-func (c *CustomOperators) match(run string) (string, bool) {
+// LookupOperator returns the registered fixity only when spelling is an exact
+// whole-symbol match. Unknown runs are intentionally not split into shorter
+// registered pieces.
+func (c *CustomOperators) LookupOperator(spelling string) (string, bool) {
 	if c.Empty() {
 		return "", false
 	}
-	fixity, ok := c.symbols[run]
+	fixity, ok := c.symbols[spelling]
 	return fixity, ok
 }
 
