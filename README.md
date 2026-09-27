@@ -1,20 +1,20 @@
 # ⚙️ In Active Development
 
 > [!NOTE]
-> Foλang (ASCII: **FoLang**) and its compiler frontend are under active research and development.
+> FΦλang (ASCII: **FoLang**) and its compiler frontend are under active research and development.
 >
 > The language definition and frontend implementation are still evolving and are not yet ready for production use.
 >
 > Development is progressing steadily toward a functional, stable, and publicly usable release.
 >
-> This repository contains the Foλang language specification, documentation, and compiler frontend.
+> This repository contains the FΦλang language specification, documentation, and compiler frontend.
 >
 > Watch this repository for release announcements and significant project updates.
 
 ---
 
 <p align="center">
-  <img src="Banner_52.png" width="400" alt="Foλang Logo"/>
+  <img src="Banner_52.png" width="400" alt="FΦλang Logo"/>
 </p>
 
 <p align="center">
@@ -29,11 +29,11 @@
   </a>
 </p>
 
-# Foλang Programming Language
+# FΦλang Programming Language
 
 **Functional Objects Language**
 
-Foλang (ASCII: **FoLang**) is a general-purpose programming language designed to be **expressive, consistent, and extensible**, combining functional fluency with object-centric abstractions.
+FΦλang (ASCII: **FoLang**) is a general-purpose programming language designed to be **expressive, consistent, and extensible**, combining functional fluency with object-centric abstractions.
 
 ---
 
@@ -53,7 +53,7 @@ Foλang (ASCII: **FoLang**) is a general-purpose programming language designed t
 
 ## Overview
 
-Foλang combines:
+FΦλang combines:
 
 - functional programming fluency;
 - object-oriented and object-centric semantics;
@@ -66,16 +66,16 @@ The project originated in **2025** and continues to evolve through active langua
 
 ## Name
 
-The canonical name of the language is **Foλang**, where the lowercase Greek
-lambda (`λ`) replaces the `L` in **FoLang**.
+The canonical name of the language is **FΦλang**, where the lowercase Greek
+lambda (`λ`) replaces the `L` and phi(`Φ`) replaces the `o` in **FoLang**.
 
-**FoLang** is the canonical ASCII representation of **Foλang**. It is used where
+**FoLang** is the canonical ASCII representation of **FΦλang**. It is used where
 Unicode is unavailable, inconvenient, or unsupported, including repository
 names, URLs, package names, command-line tooling, and other ASCII-oriented
 contexts.
 
 ```text
-Canonical name:       Foλang
+Canonical name:       FΦλang
 Canonical ASCII form: FoLang
 Expanded name:        Functional Objects Language
 ```
@@ -89,10 +89,10 @@ variant of Foλang.
 
 This repository is the canonical public repository for:
 
-- the Foλang language definition and specification;
+- the FΦλang language definition and specification;
 - syntax, grammar, and semantic documentation;
 - language examples and reference material;
-- the Foλang compiler frontend;
+- the FΦλang compiler frontend;
 - frontend tests, build files, and development documentation.
 
 The following components are intentionally maintained in separate repositories:
@@ -109,7 +109,7 @@ Those components may follow their own development schedules and licensing terms.
 
 | Path | Purpose |
 |---|---|
-| [`src/`](src/) | Foλang compiler frontend source |
+| [`src/`](src/) | FΦλang compiler frontend source |
 | [`cmd/`](cmd/) | Developer tools — doc generation, corpus extraction |
 | [`tests/`](tests/), [`testdata/`](testdata/) | Parser test corpora and fixtures |
 | [`docs/`](docs/) | Language specification, guides, and supporting documentation |
@@ -121,17 +121,17 @@ Those components may follow their own development schedules and licensing terms.
 
 This repository contains two separately licensed bodies of work.
 
-### 📘 Foλang Language Definition and Documentation — CC BY 4.0
+### 📘 FΦλang Language Definition and Documentation — CC BY 4.0
 
-The copyrightable expression contained in the Foλang language definition and documentation—including its specification, syntax and grammar descriptions, semantic-rule descriptions, examples, diagrams, tables, and explanatory material—is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/), unless otherwise stated.
+The copyrightable expression contained in the FΦλang language definition and documentation—including its specification, syntax and grammar descriptions, semantic-rule descriptions, examples, diagrams, tables, and explanatory material—is licensed under the [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/), unless otherwise stated.
 
 CC BY 4.0 permits copying, redistribution, and adaptation, including commercial use, provided that appropriate attribution is given, the licence is referenced, and modifications are indicated.
 
-See the [Foλang documentation](docs/README.md) for the complete language-definition and documentation licence notice.
+See the [FΦλang documentation](docs/README.md) for the complete language-definition and documentation licence notice.
 
-### 🔧 Foλang Compiler Frontend — GPLv3
+### 🔧 FΦλang Compiler Frontend — GPLv3
 
-The Foλang compiler frontend source code is licensed under the GNU General Public License version 3.
+The FΦλang compiler frontend source code is licensed under the GNU General Public License version 3.
 
 See the [frontend licence](LICENSE.txt) for the complete terms.
 
@@ -150,7 +150,7 @@ The licences stated in this repository apply only to the language-definition, do
 
 ## Documentation
 
-- [Foλang Language Guide and Specification](docs/README.md)
+- [FΦλang Language Guide and Specification](docs/README.md)
 - [Development Roadmap](ROADMAP.md)
 - [Project Credits](docs/CREDITS.md)
 
@@ -196,4 +196,4 @@ See [CREDITS](docs/CREDITS.md) for full attribution.
 
 ---
 
-> © 2025–2026 Foλang Project
+> © 2025–2026 FΦλang Project

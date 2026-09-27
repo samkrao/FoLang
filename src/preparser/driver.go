@@ -28,7 +28,9 @@ func importStdLibraries(symbols *symboltable.FolangSymbols, installDir string) {
 	if status == "error" {
 		return
 	}
-	updateFolangSymbols(source, "co", symbols)
+	if source.FolangSymbols != nil {
+		updateFolangSymbols(*source.FolangSymbols, "co", symbols)
+	}
 
 }
 
@@ -55,7 +57,9 @@ func importLibraries(symbols *symboltable.FolangSymbols, projectDir string) {
 		if status == "error" {
 			continue
 		}
-		updateFolangSymbols(source, primary, symbols)
+		if source.FolangSymbols != nil {
+			updateFolangSymbols(*source.FolangSymbols, primary, symbols)
+		}
 
 	}
 }
@@ -118,32 +122,23 @@ func PreParse(installDir string, projectDir string) *symboltable.FolangSymbols {
 }
 
 func fetchBackendConf(installDir string, symbols *symboltable.FolangSymbols) error {
-
 	path := filepath.Join(installDir, "conf", "backend-conf.json")
-
-	if _, err := os.Stat(path); err != nil {
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return err
-		}
-
+	data, err := os.ReadFile(path)
+	switch {
+	case err == nil:
 		if err := json.Unmarshal(data, &symbols.BackendConf); err != nil {
 			return err
 		}
-	} else if os.IsNotExist(err) {
-
-		k := symboltable.BackendConfig{
+	case os.IsNotExist(err):
+		symbols.BackendConf = symboltable.BackendConfig{
 			Protocol:          "folang-plugin/1.0",
 			HIRSchema:         "folang-hir/1",
 			Wire:              "protobuf/1.0",
 			RuntimeOperations: "folang-runtime-operations/1",
 		}
-		symbols.BackendConf = k
-
-	} else {
+	default:
 		return err
 	}
-
 	return nil
 }
 
