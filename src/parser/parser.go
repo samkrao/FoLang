@@ -23,3 +23,13 @@ func (parser Parser) Parse() ast.SET {
 func (parser Parser) ParseOperators() *symboltable.FolangSymbols {
 	return &symboltable.FolangSymbols{}
 }
+
+func (parser Parser) ParsePackaged() ast.SET {
+
+	return ast.Definition{}
+}
+
+func (parser Parser) ParseComponents() ast.SET {
+
+	return ast.Definition{}
+}

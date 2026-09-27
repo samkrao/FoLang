@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	symboltable "github.com/samkrao/fo-lang/src/context"
 	"github.com/samkrao/fo-lang/src/parser"
@@ -21,9 +22,41 @@ func Init(projectDir string, installDir string, symbols *symboltable.FolangSymbo
 }
 
 func importStdLibraries(symbols *symboltable.FolangSymbols, installDir string) {
+	path := filepath.Join(installDir, "atdlib", "co.folenc")
+	source, status := Deserialize(path)
+	if status == "error" {
+		return
+	}
+	updateFolangSymbols(source, "co", symbols)
+
 }
 
 func importLibraries(symbols *symboltable.FolangSymbols, projectDir string) {
+
+	path := filepath.Join(projectDir, "lib")
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return
+	}
+	filenames := []string{}
+	for _, entry := range entries {
+		if !entry.IsDir() && filepath.Ext(entry.Name()) == ".folenc" {
+
+			fullPath := filepath.Join(path, entry.Name())
+			filenames = append(filenames, fullPath)
+		}
+	}
+	for _, path := range filenames {
+		source, status := Deserialize(path)
+		name := filepath.Base(path)
+		ext := filepath.Ext(name)
+		primary := strings.TrimSuffix(name, ext)
+		if status == "error" {
+			continue
+		}
+		updateFolangSymbols(source, primary, symbols)
+
+	}
 }
 
 type Kind string
@@ -45,10 +78,17 @@ func parseAndImportComponent(symbols *symboltable.FolangSymbols, projectDir stri
 	}
 	stream := scanlex.NewTokenStream(source, path, &symbols.Operators)
 
-	if kind_ == Operators {
-
+	switch kind_ {
+	case Operators:
 		parser := Init(projectDir, installDir, symbols, stream)
 		parser.ParseOperators()
+	case Packaged:
+		parser := Init(projectDir, installDir, symbols, stream)
+		parser.ParsePackaged()
+
+	default:
+		parser := Init(projectDir, installDir, symbols, stream)
+		parser.ParseComponents()
 
 	}
 }
