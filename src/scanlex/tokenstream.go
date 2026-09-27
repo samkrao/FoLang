@@ -7,39 +7,25 @@ import (
 	"github.com/samkrao/fo-lang/src/helpers"
 )
 
-// Lexer scans source bytes on demand. nextToken returns one lexical token at a
-// time; whitespace, comments, and line breaks are consumed without being
-// returned. These are lexical tokens: the legacy Tokenize functions additionally
-// apply the historical dotted-name and built-in folding passes.
+// tokenLexer scans source bytes on demand. nextToken returns one lexical token
+// at a time; whitespace, comments, and line breaks are consumed without being
+// returned.
 //
 // The source bytes are copied into the scanner's immutable string storage. The
-// caller may therefore reuse or modify source after NewLexer returns.
-type Lexer struct {
+// caller may therefore reuse or modify source after NewTokenStream returns.
+type tokenLexer struct {
 	inner    *lexer
 	finished bool
 	eof      Token
 }
 
-// NewLexer creates a lazy lexer. Invalid or unsupported lexemes are returned as
-// UNKNOWN tokens; the lexer does not report diagnostics.
-func NewLexer(source []byte, fn string, custom *CustomOperators) *Lexer {
-	return newLexer(source, fn, custom)
-}
-
-// NewLexerCollecting is kept as a compatibility alias for NewLexer. Lexical
-// errors are represented as UNKNOWN tokens rather than collected diagnostics.
-func NewLexerCollecting(source []byte, fn string, custom *CustomOperators) *Lexer {
-	return NewLexer(source, fn, custom)
-}
-
-func newLexer(source []byte, fn string, custom *CustomOperators) *Lexer {
+func newLexer(source []byte, fn string) *tokenLexer {
 	text := string(source)
 	// A leading BOM is source-file metadata and does not participate in token
 	// positions, matching the established Tokenize API.
 	text = strings.TrimPrefix(text, utf8BOM)
 	core := createLexer(text, fn)
-	core.custom = custom
-	return &Lexer{
+	return &tokenLexer{
 		inner: core,
 		eof:   newUniqueToken(EOF, NA, "EOF", helpers.NewPosition(1, 0, 1, 0, "", "", false), helpers.NewPosition(1, 0, 1, 0, "", "", false)),
 	}
@@ -47,7 +33,7 @@ func newLexer(source []byte, fn string, custom *CustomOperators) *Lexer {
 
 // nextToken scans just far enough to return the next token. EOF is stable: all
 // calls after the source is exhausted return the same EOF token.
-func (lexer *Lexer) nextToken() Token {
+func (lexer *tokenLexer) nextToken() Token {
 	if lexer == nil || lexer.inner == nil {
 		return Token{Kind: EOF, SubKind: NA, Value: "EOF"}
 	}
@@ -106,7 +92,7 @@ func (lexer *Lexer) nextToken() Token {
 	return lexer.eof
 }
 
-func (lexer *Lexer) emitUnknown(length, lines, endColumn int) Token {
+func (lexer *tokenLexer) emitUnknown(length, lines, endColumn int) Token {
 	core := lexer.inner
 	src := core.remainder()
 	if length <= 0 || length > len(src) {
@@ -130,19 +116,22 @@ func (lexer *Lexer) emitUnknown(length, lines, endColumn int) Token {
 	return token
 }
 
-// TokenStream provides lazy parser-style lookahead over a Lexer. UNKNOWN tokens
-// pass through unchanged, including their original lexeme.
+// TokenStream provides lazy parser-style lookahead over source text. UNKNOWN
+// tokens pass through unchanged, including their original lexeme.
 type TokenStream struct {
-	lexer     *Lexer
+	lexer     *tokenLexer
 	buffer    []Token
 	eof       Token
 	exhausted bool
 }
 
-// NewTokenStream wraps lexer with a parser-facing folding buffer. The buffer is
-// populated on first use, so constructing a stream does not scan source.
-func NewTokenStream(lexer *Lexer) *TokenStream {
-	return &TokenStream{lexer: lexer, eof: Token{Kind: EOF, SubKind: NA, Value: "EOF"}}
+// NewTokenStream creates the internal lexer and its lazy parser-facing buffer.
+// Constructing a stream copies source but does not scan it.
+func NewTokenStream(source []byte, fn string) *TokenStream {
+	return &TokenStream{
+		lexer: newLexer(source, fn),
+		eof:   Token{Kind: EOF, SubKind: NA, Value: "EOF"},
+	}
 }
 
 // Peek returns the token n positions ahead without consuming it. Peek(0) is

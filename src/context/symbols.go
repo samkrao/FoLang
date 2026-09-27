@@ -22,11 +22,11 @@ type ResolutionState string
 
 const (
 	Unresolved         ResolutionState = "UnResolved"
-	Resolving                          = "Resolving"
-	Resolved                           = "Resolved"
-	Ambiguous                          = "Ambiguous"
-	Invalid                            = "Invalid"
-	Partially_resolved                 = "Partially_Resolved"
+	Resolving          ResolutionState = "Resolving"
+	Resolved           ResolutionState = "Resolved"
+	Ambiguous          ResolutionState = "Ambiguous"
+	Invalid            ResolutionState = "Invalid"
+	Partially_resolved ResolutionState = "Partially_Resolved"
 )
 
 type SymbolDetails struct {
@@ -159,16 +159,16 @@ type PredefinedObjects string
 
 const (
 	List       PredefinedObjects = "co.List"
-	Set                          = "co.Set"
-	Map                          = "co.Map"
-	Tree                         = "co.Tree"
-	Trie                         = "co.Trie"
-	Array                        = "co.Array"
-	Tuple                        = "co.Tuple"
-	Comparable                   = "co.Comparable"
-	Stack                        = "co.Stack"
-	Queue                        = "co.Queue"
-	Matrix                       = "co.Matrix"
+	Set        PredefinedObjects = "co.Set"
+	Map        PredefinedObjects = "co.Map"
+	Tree       PredefinedObjects = "co.Tree"
+	Trie       PredefinedObjects = "co.Trie"
+	Array      PredefinedObjects = "co.Array"
+	Tuple      PredefinedObjects = "co.Tuple"
+	Comparable PredefinedObjects = "co.Comparable"
+	Stack      PredefinedObjects = "co.Stack"
+	Queue      PredefinedObjects = "co.Queue"
+	Matrix     PredefinedObjects = "co.Matrix"
 )
 
 // ValueList co.type = co.List(co.int);
@@ -730,8 +730,8 @@ type FunctionScope string
 
 const (
 	Lexical FunctionScope = "lexical"
-	Dynamic               = "dynamic"
-	Mixed                 = "mixed"
+	Dynamic FunctionScope = "dynamic"
+	Mixed   FunctionScope = "mixed"
 )
 
 // x ()->()={}
@@ -1114,8 +1114,8 @@ type KeywordKind string
 
 const (
 	This KeywordKind = "this"
-	Co               = "co"
-	FΦλ              = "fΦλ"
+	Co   KeywordKind = "co"
+	FΦλ  KeywordKind = "fΦλ"
 )
 
 // this->parent, this->parents etc.,

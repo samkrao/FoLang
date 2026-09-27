@@ -4,8 +4,7 @@ import "testing"
 
 func TestTokenStreamPeekBuffersOnlyRequestedLookahead(t *testing.T) {
 	const source = "alpha beta gamma delta"
-	lexer := NewLexer([]byte(source), "test.fol", nil)
-	stream := NewTokenStream(lexer)
+	stream := NewTokenStream([]byte(source), "test.fol")
 
 	if got := stream.Peek(0); got.Value != "alpha" {
 		t.Fatalf("Peek(0) = %q, want alpha", got.Value)
@@ -13,7 +12,7 @@ func TestTokenStreamPeekBuffersOnlyRequestedLookahead(t *testing.T) {
 	if got := len(stream.buffer); got != 1 {
 		t.Fatalf("Peek(0) buffered %d tokens, want 1", got)
 	}
-	if got := lexer.inner.pos; got != len("alpha") {
+	if got := stream.lexer.inner.pos; got != len("alpha") {
 		t.Fatalf("Peek(0) scanned through byte %d, want %d", got, len("alpha"))
 	}
 
@@ -23,14 +22,13 @@ func TestTokenStreamPeekBuffersOnlyRequestedLookahead(t *testing.T) {
 	if got := len(stream.buffer); got != 3 {
 		t.Fatalf("Peek(2) buffered %d tokens, want 3", got)
 	}
-	if got := lexer.inner.pos; got >= len(source) {
+	if got := stream.lexer.inner.pos; got >= len(source) {
 		t.Fatalf("Peek(2) eagerly scanned the complete source through byte %d", got)
 	}
 }
 
 func TestTokenStreamNextBuffersOneToken(t *testing.T) {
-	lexer := NewLexer([]byte("alpha beta"), "test.fol", nil)
-	stream := NewTokenStream(lexer)
+	stream := NewTokenStream([]byte("alpha beta"), "test.fol")
 
 	if got := stream.Next(); got.Value != "alpha" {
 		t.Fatalf("first Next() = %q, want alpha", got.Value)
@@ -38,7 +36,7 @@ func TestTokenStreamNextBuffersOneToken(t *testing.T) {
 	if len(stream.buffer) != 0 {
 		t.Fatalf("Next() retained %d unrequested tokens", len(stream.buffer))
 	}
-	if got := lexer.inner.pos; got != len("alpha") {
+	if got := stream.lexer.inner.pos; got != len("alpha") {
 		t.Fatalf("Next() scanned through byte %d, want %d", got, len("alpha"))
 	}
 
@@ -54,8 +52,7 @@ func TestTokenStreamNextBuffersOneToken(t *testing.T) {
 }
 
 func TestTokenStreamPeekPastEOFStopsScanning(t *testing.T) {
-	lexer := NewLexer([]byte("only"), "test.fol", nil)
-	stream := NewTokenStream(lexer)
+	stream := NewTokenStream([]byte("only"), "test.fol")
 
 	if got := stream.Peek(10); got.Kind != EOF {
 		t.Fatalf("Peek past EOF kind = %v, want EOF", got.Kind)
