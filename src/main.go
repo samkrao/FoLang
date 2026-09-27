@@ -49,6 +49,15 @@ func main() {
 	file, source, status := preparser.FetchSource(*fname)
 
 	if status == "success" {
+
+		installDir, err := preparser.InstalledStandardArtifactPath()
+		if err != nil {
+			fmt.Println("Install folder not found!")
+			os.Exit(1)
+		}
+
+		symbols := preparser.PreParse(installDir, *fname)
+
 		stream := scanlex.NewTokenStream(source, file)
 
 		if *tokenizeonly {
@@ -61,14 +70,6 @@ func main() {
 			}
 			return
 		}
-
-		installDir, err := preparser.InstalledStandardArtifactPath()
-		if err != nil {
-			fmt.Println("Install folder not found!")
-			os.Exit(1)
-		}
-
-		symbols := preparser.PreParse(installDir, *fname)
 		parser := preparser.Init(*fname, installDir, symbols, stream)
 		ast := parser.Parse()
 
