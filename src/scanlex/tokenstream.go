@@ -121,6 +121,7 @@ func (lexer *tokenLexer) emitUnknown(length, lines, endColumn int) Token {
 type TokenStream struct {
 	lexer     *tokenLexer
 	buffer    []Token
+	history   []Token
 	eof       Token
 	exhausted bool
 }
@@ -155,12 +156,29 @@ func (stream *TokenStream) Next() Token {
 	}
 
 	token := stream.buffer[0]
+	stream.history = append(stream.history, token)
 	stream.buffer[0] = Token{}
 	stream.buffer = stream.buffer[1:]
 	if len(stream.buffer) == 0 {
 		stream.buffer = nil
 	}
 	return token
+}
+
+// Previous returns a previously consumed token without changing the stream.
+// Previous(1) is the most recently consumed token, Previous(2) is the token
+// consumed before that, and so on. The result is false when the requested
+// history does not exist. A non-positive lookbehind is a programmer error.
+func (stream *TokenStream) Previous(n int) (Token, bool) {
+	if n <= 0 {
+		panic("scanlex.TokenStream.Previous: lookbehind must be positive")
+	}
+
+	index := len(stream.history) - n
+	if index < 0 {
+		return Token{}, false
+	}
+	return stream.history[index], true
 }
 
 // ensure lazily scans until count tokens are buffered or EOF is reached.
