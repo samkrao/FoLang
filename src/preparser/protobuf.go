@@ -1,12 +1,21 @@
 package preparser
 
-import symboltable "github.com/samkrao/fo-lang/src/context"
+import (
+	"github.com/samkrao/fo-lang/src/ast"
+	symboltable "github.com/samkrao/fo-lang/src/context"
+)
 
-func Deserialize(filename string) (symboltable.FolangSymbols, string) {
-
-	return symboltable.FolangSymbols{}, "error"
+type SerializableLibComponents struct {
+	SurfaceSymbols *symboltable.FolangSymbols
+	Ast            ast.SET
+	FolangSymbols  *symboltable.FolangSymbols
 }
 
-func Serialize(symbols *symboltable.FolangSymbols, filename string) {
+func Deserialize(filename string) (SerializableLibComponents, string) {
+
+	return SerializableLibComponents{}, "error"
+}
+
+func Serialize(symbols *symboltable.FolangSymbols, ast ast.SET, surfaceSymbols *symboltable.FolangSymbols, filename string) {
 
 }

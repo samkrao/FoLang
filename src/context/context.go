@@ -28,6 +28,12 @@ const (
 	MixedCallSite            ResolutionPolicy = "mixed_call_site"
 )
 
+/*
+Protocol:          "folang-plugin/1.0",
+HIRSchema:         "folang-hir/1",
+Wire:              "protobuf/1.0",
+RuntimeOperations: "folang-runtime-operations/1",
+*/
 type BackendConfig struct {
 	Protocol          string `json:"protocol"`
 	HIRSchema         string `json:"hir_schema"`

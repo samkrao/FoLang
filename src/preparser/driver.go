@@ -122,15 +122,25 @@ func fetchBackendConf(installDir string, symbols *symboltable.FolangSymbols) err
 	path := filepath.Join(installDir, "conf", "backend-conf.json")
 
 	if _, err := os.Stat(path); err != nil {
-		return err
-	}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
 
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
+		if err := json.Unmarshal(data, &symbols.BackendConf); err != nil {
+			return err
+		}
+	} else if os.IsNotExist(err) {
 
-	if err := json.Unmarshal(data, &symbols.BackendConf); err != nil {
+		k := symboltable.BackendConfig{
+			Protocol:          "folang-plugin/1.0",
+			HIRSchema:         "folang-hir/1",
+			Wire:              "protobuf/1.0",
+			RuntimeOperations: "folang-runtime-operations/1",
+		}
+		symbols.BackendConf = k
+
+	} else {
 		return err
 	}
 
