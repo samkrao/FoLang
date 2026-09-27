@@ -43,11 +43,6 @@ func (tk Token) IsOneOfMany(expectedTokens ...TokenKind) bool {
 	return false
 }
 
-// DummyNode is a sentinel Token with INVALID kind used as a placeholder.
-var DummyNode Token = Token{
-	Kind: UNKNOWN, SubKind: NA, Value: "Invalid", StartPos: helpers.NilPosition, EndPos: helpers.NilPosition,
-}
-
 // NewUniqueToken creates a new Token with the given kind, value, and position range.
 func NewUniqueToken(kind TokenKind, subKind SubKind, value string, startPos *helpers.Position, endPos *helpers.Position) Token {
 	return newUniqueToken(kind, subKind, value, startPos, endPos)
@@ -55,12 +50,6 @@ func NewUniqueToken(kind TokenKind, subKind SubKind, value string, startPos *hel
 func newUniqueToken(kind TokenKind, subKind SubKind, value string, startPos *helpers.Position, endPos *helpers.Position) Token {
 	return Token{
 		Kind: kind, SubKind: subKind, Value: value, StartPos: startPos, EndPos: endPos,
-	}
-}
-
-func newDummyToken(value string, startPos *helpers.Position, endPos *helpers.Position) Token {
-	return Token{
-		Kind: UNKNOWN, SubKind: NA, Value: value, StartPos: startPos, EndPos: endPos,
 	}
 }
 
