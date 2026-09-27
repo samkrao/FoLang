@@ -1,0 +1,9 @@
+myPointer co.type = co.int->(****);
+
+myRef co.type = co.int->(&&);
+
+k co.bool = co.const.true;
+
+j co.bool = co.const.false;
+
+m :=    j &&    k;

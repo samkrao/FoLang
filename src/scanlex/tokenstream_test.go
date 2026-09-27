@@ -98,6 +98,40 @@ func TestTokenStreamAtEOFSupportsIterationWithoutConsuming(t *testing.T) {
 	}
 }
 
+func TestSubKindString(t *testing.T) {
+	tests := map[SubKind]string{
+		STATEMENT_EXPR: "STATEMENT_EXPR",
+		METHOD:         "METHOD",
+		OPERATORS:      "OPERATORS",
+		NA:             "NA",
+	}
+	for subKind, expected := range tests {
+		if got := SubKindString(subKind); got != expected {
+			t.Fatalf("SubKindString(%d) = %q, want %q", subKind, got, expected)
+		}
+	}
+}
+
+func TestTokenKindString(t *testing.T) {
+	tests := map[TokenKind]string{
+		IDENTIFIER:           "IDENTIFIER",
+		COMPOSITE_IDENTIFIER: "COMPOSITE_IDENTIFIER",
+		BUILT_INS_FOL:        "BUILT_INS_FOL",
+		CUSTOM_OPERATOR:      "CUSTOM_OPERATOR",
+		UNKNOWN:              "UNKNOWN",
+	}
+	for kind, expected := range tests {
+		if got := TokenKindString(kind); got != expected {
+			t.Fatalf("TokenKindString(%d) = %q, want %q", kind, got, expected)
+		}
+	}
+	for kind := EOF; kind <= CUSTOM_OPERATOR; kind++ {
+		if _, ok := tokenKindNames[kind]; !ok {
+			t.Fatalf("TokenKindString has no name for kind %d", kind)
+		}
+	}
+}
+
 func TestTokenStreamPreviousTracksOnlyConsumedTokens(t *testing.T) {
 	stream := NewTokenStream([]byte("alpha beta gamma"), "test.fol")
 
@@ -318,7 +352,6 @@ func TestScannerCollectsSpacesAndNewlinesButSkipsComments(t *testing.T) {
 	}{
 		{IDENTIFIER, "a"},
 		{SPACE, " \t"},
-		{NEWLINE, "\r\n"},
 		{SPACE, "\f "},
 		{IDENTIFIER, "b"},
 		{EOF, "EOF"},
@@ -330,9 +363,22 @@ func TestScannerCollectsSpacesAndNewlinesButSkipsComments(t *testing.T) {
 			t.Fatalf("token %d = (%v, %q), want (%v, %q)",
 				i, got.Kind, got.Value, expected.kind, expected.value)
 		}
-		if got.Kind == NEWLINE && got.EndPos.Ln != 2 {
-			t.Fatalf("newline end line = %d, want 2", got.EndPos.Ln)
-		}
+	}
+}
+
+func TestLineCommentsConsumeTheirNewlinesButBlankLinesRemain(t *testing.T) {
+	stream := NewTokenStream([]byte("// first\r\n// second\n\nx"), "test.fol")
+
+	newline := stream.Next()
+	if newline.Kind != NEWLINE || newline.Value != "\n" {
+		t.Fatalf("first visible token = (%v, %q), want the blank-line NEWLINE", newline.Kind, newline.Value)
+	}
+	identifier := stream.Next()
+	if identifier.Kind != IDENTIFIER || identifier.Value != "x" {
+		t.Fatalf("second visible token = (%v, %q), want IDENTIFIER x", identifier.Kind, identifier.Value)
+	}
+	if identifier.StartPos == nil || identifier.StartPos.Ln != 4 {
+		t.Fatalf("identifier line = %v, want 4", identifier.StartPos)
 	}
 }
 

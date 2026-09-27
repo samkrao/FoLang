@@ -8,8 +8,8 @@ import (
 )
 
 // lexer scans source bytes on demand. nextToken returns one lexical token at a
-// time. Spaces and line endings are tokens; comments are consumed without being
-// returned.
+// time. Spaces and source line endings are tokens; line comments consume their
+// terminating line ending, and all comments are consumed without being returned.
 //
 // The source bytes are copied into the scanner's immutable string storage. The
 // caller may therefore reuse or modify source after NewTokenStream returns.

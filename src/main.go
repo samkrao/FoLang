@@ -52,8 +52,12 @@ func main() {
 		stream := scanlex.NewTokenStream(source, file)
 
 		if *tokenizeonly {
-			for !stream.AtEOF() {
-				stream.Next().Println()
+			for {
+				token := stream.Next()
+				token.Println()
+				if token.Kind == scanlex.EOF {
+					break
+				}
 			}
 			return
 		}

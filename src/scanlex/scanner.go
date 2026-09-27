@@ -97,11 +97,24 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 			n := strings.IndexAny(src, "\r\n")
 			if n < 0 {
 				n = len(src)
+				if containsInvalidSourceEncoding(src[:n]) {
+					return scanned{action: actionUnknown, length: n}, true
+				}
+				return skip(n), true
+			}
+
+			// A line comment owns its terminating physical line ending. Consume
+			// that ending with the comment so discarded comment lines do not leave
+			// parser-visible NEWLINE tokens behind.
+			if src[n] == '\r' && n+1 < len(src) && src[n+1] == '\n' {
+				n += 2
+			} else {
+				n++
 			}
 			if containsInvalidSourceEncoding(src[:n]) {
-				return scanned{action: actionUnknown, length: n}, true
+				return scanned{action: actionUnknown, length: n, lines: 1, endColumn: 0}, true
 			}
-			return skip(n), true
+			return scanned{action: actionSkip, length: n, lines: 1, endColumn: 0}, true
 		}
 		if strings.HasPrefix(src, "/*") {
 			// block-comment ends at the FIRST "*/" and may span line breaks.

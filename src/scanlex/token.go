@@ -23,12 +23,13 @@ type Token struct {
 	BoundaryAfter  bool
 }
 
-// Println prints the token value, kind, and position range to stdout.
+// Println prints the quoted token value, kind, subkind, and position range to
+// stdout. Quoting keeps whitespace and newline tokens visible on one line.
 func (tk Token) Println() {
-	fmt.Print(tk.Value + " == " + fmt.Sprint(tk.Kind) + " == ")
+	fmt.Printf("%q == kind %s == subkind %s == ", tk.Value, TokenKindString(tk.Kind), SubKindString(tk.SubKind))
 	tk.StartPos.Print()
 	tk.EndPos.Print()
-	fmt.Println("")
+	fmt.Println()
 }
 
 // IsOneOfMany reports whether the token kind matches any of the given expected kinds.
