@@ -130,16 +130,13 @@ func (lexer *Lexer) emitUnknown(length, lines, endColumn int) Token {
 	return token
 }
 
-// TokenStream provides parser-style lookahead over a Lexer. Before exposing a
-// token it applies the same whole-stream folding contract as Tokenize: built-in
-// names and types, composite identifiers, directives, and method calls retain
-// their established parser-facing token kinds and values. UNKNOWN tokens pass
-// through unchanged, including their original lexeme.
+// TokenStream provides lazy parser-style lookahead over a Lexer. UNKNOWN tokens
+// pass through unchanged, including their original lexeme.
 type TokenStream struct {
-	lexer    *Lexer
-	buffer   []Token
-	eof      Token
-	prepared bool
+	lexer     *Lexer
+	buffer    []Token
+	eof       Token
+	exhausted bool
 }
 
 // NewTokenStream wraps lexer with a parser-facing folding buffer. The buffer is
@@ -154,7 +151,7 @@ func (stream *TokenStream) Peek(n int) Token {
 	if n < 0 {
 		panic("scanlex.TokenStream.Peek: negative lookahead")
 	}
-	stream.prepare()
+	stream.ensure(n + 1)
 	if n < len(stream.buffer) {
 		return stream.buffer[n]
 	}
@@ -163,7 +160,7 @@ func (stream *TokenStream) Peek(n int) Token {
 
 // Next returns and consumes the next token.
 func (stream *TokenStream) Next() Token {
-	stream.prepare()
+	stream.ensure(1)
 	if len(stream.buffer) == 0 {
 		return stream.eof
 	}
@@ -177,35 +174,26 @@ func (stream *TokenStream) Next() Token {
 	return token
 }
 
-// prepare materializes and folds the lexical stream once. Folding dotted names
-// requires arbitrary forward context (for example, distinguishing a composite
-// identifier from a method call), so exposing raw tokens incrementally would
-// give TokenStream a different contract from Tokenize.
-func (stream *TokenStream) prepare() {
-	if stream.prepared {
+// ensure lazily scans until count tokens are buffered or EOF is reached.
+// Callers request parser-facing counts: Next requests one and Peek(n) requests
+// n+1 because Peek(0) addresses the first buffered token.
+func (stream *TokenStream) ensure(count int) {
+	if count <= len(stream.buffer) || stream.exhausted {
 		return
 	}
-	stream.prepared = true
 
 	if stream.lexer == nil || stream.lexer.inner == nil {
+		stream.exhausted = true
 		return
 	}
 
-	raw := make([]Token, 0)
-	for {
+	for len(stream.buffer) < count {
 		token := stream.lexer.nextToken()
 		if token.Kind == EOF {
 			stream.eof = token
+			stream.exhausted = true
 			break
 		}
-		raw = append(raw, token)
+		stream.buffer = append(stream.buffer, token)
 	}
-
-	core := stream.lexer.inner
-	core.Tokens = raw
-	core.currentPos = 0
-	//cleanupLB(core)
-	//foldTokens(core)
-	//foldSpecialStatementBuiltins(core)
-	stream.buffer = append(stream.buffer, core.Tokens...)
 }
