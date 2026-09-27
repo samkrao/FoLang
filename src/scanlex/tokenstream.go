@@ -7,41 +7,31 @@ import (
 	"github.com/samkrao/fo-lang/src/helpers"
 )
 
-// tokenLexer scans source bytes on demand. nextToken returns one lexical token
-// at a time; whitespace, comments, and line breaks are consumed without being
+// lexer scans source bytes on demand. nextToken returns one lexical token at a
+// time. Spaces and line endings are tokens; comments are consumed without being
 // returned.
 //
 // The source bytes are copied into the scanner's immutable string storage. The
 // caller may therefore reuse or modify source after NewTokenStream returns.
-type tokenLexer struct {
-	inner    *lexer
-	finished bool
-	eof      Token
-}
-
-func newLexer(source []byte, fn string) *tokenLexer {
+func newLexer(source []byte, fn string) *lexer {
 	text := string(source)
 	// A leading BOM is source-file metadata and does not participate in token
-	// positions, matching the established Tokenize API.
+	// positions.
 	text = strings.TrimPrefix(text, utf8BOM)
-	core := createLexer(text, fn)
-	return &tokenLexer{
-		inner: core,
-		eof:   newUniqueToken(EOF, NA, "EOF", helpers.NewPosition(1, 0, 1, 0, "", "", false), helpers.NewPosition(1, 0, 1, 0, "", "", false)),
-	}
+	return createLexer(text, fn)
 }
 
 // nextToken scans just far enough to return the next token. EOF is stable: all
 // calls after the source is exhausted return the same EOF token.
-func (lexer *tokenLexer) nextToken() Token {
-	if lexer == nil || lexer.inner == nil {
+func (lexer *lexer) nextToken() Token {
+	if lexer == nil {
 		return Token{Kind: EOF, SubKind: NA, Value: "EOF"}
 	}
 	if lexer.finished {
 		return lexer.eof
 	}
 
-	core := lexer.inner
+	core := lexer
 	for !core.at_eof() {
 		src := core.remainder()
 		if r, size := utf8.DecodeRuneInString(src); r == utf8.RuneError && size == 1 {
@@ -66,8 +56,7 @@ func (lexer *tokenLexer) nextToken() Token {
 
 		switch result.action {
 		case actionNewline:
-			core.advanceN(result.length)
-			core.advanceline(1)
+			return core.emitNewline(src[:result.length])
 		case actionSkip:
 			core.advanceN(result.length)
 			if result.lines > 0 {
@@ -77,23 +66,18 @@ func (lexer *tokenLexer) nextToken() Token {
 		case actionUnknown:
 			return lexer.emitUnknown(result.length, result.lines, result.endColumn)
 		case actionEmit:
-			core.emitToken(result.kind, src[:result.length])
-			token := core.Tokens[len(core.Tokens)-1]
-			// Keep only the most recent emitted token for diagnostic context.
-			core.Tokens = []Token{token}
-			core.currentPos = 0
-			return token
+			return core.emitToken(result.kind, result.subKind, src[:result.length])
 		}
 	}
 
 	lexer.finished = true
-	core.Tokens = []Token{lexer.eof}
-	core.currentPos = 0
+	end := helpers.NewPosition(core.pos, core.line, core.col, core.pos, core.fn, core.currentLineText(), false)
+	lexer.eof = newUniqueToken(EOF, NA, "EOF", end.Copy(), end)
 	return lexer.eof
 }
 
-func (lexer *tokenLexer) emitUnknown(length, lines, endColumn int) Token {
-	core := lexer.inner
+func (lexer *lexer) emitUnknown(length, lines, endColumn int) Token {
+	core := lexer
 	src := core.remainder()
 	if length <= 0 || length > len(src) {
 		length = 1
@@ -111,26 +95,35 @@ func (lexer *tokenLexer) emitUnknown(length, lines, endColumn int) Token {
 	token := newUniqueToken(UNKNOWN, NA, lexeme, start.Copy(), end)
 	token.BoundaryBefore = boundaryBefore
 	token.BoundaryAfter = boundaryAfter
-	core.Tokens = []Token{token}
-	core.currentPos = 0
 	return token
 }
 
 // TokenStream provides lazy parser-style lookahead over source text. UNKNOWN
 // tokens pass through unchanged, including their original lexeme.
 type TokenStream struct {
-	lexer     *tokenLexer
-	buffer    []Token
-	history   []Token
-	eof       Token
-	exhausted bool
+	lexer        *lexer
+	rawBuffer    []Token
+	buffer       []Token
+	history      []Token
+	eof          Token
+	rawExhausted bool
+	exhausted    bool
 }
 
 // NewTokenStream creates the internal lexer and its lazy parser-facing buffer.
 // Constructing a stream copies source but does not scan it.
 func NewTokenStream(source []byte, fn string) *TokenStream {
+	return NewTokenStreamWithOperators(source, fn, nil)
+}
+
+// NewTokenStreamWithOperators creates a stream whose scanner recognizes the
+// supplied project-local operator spellings. Lexer construction remains an
+// internal implementation detail.
+func NewTokenStreamWithOperators(source []byte, fn string, custom *CustomOperators) *TokenStream {
+	lexer := newLexer(source, fn)
+	lexer.custom = custom
 	return &TokenStream{
-		lexer: newLexer(source, fn),
+		lexer: lexer,
 		eof:   Token{Kind: EOF, SubKind: NA, Value: "EOF"},
 	}
 }
@@ -165,6 +158,22 @@ func (stream *TokenStream) Next() Token {
 	return token
 }
 
+// NextWH returns and consumes the next token without recording it in history.
+func (stream *TokenStream) NextWH() Token {
+	stream.ensure(1)
+	if len(stream.buffer) == 0 {
+		return stream.eof
+	}
+
+	token := stream.buffer[0]
+	stream.buffer[0] = Token{}
+	stream.buffer = stream.buffer[1:]
+	if len(stream.buffer) == 0 {
+		stream.buffer = nil
+	}
+	return token
+}
+
 // Previous returns a previously consumed token without changing the stream.
 // Previous(1) is the most recently consumed token, Previous(2) is the token
 // consumed before that, and so on. The result is false when the requested
@@ -189,13 +198,13 @@ func (stream *TokenStream) ensure(count int) {
 		return
 	}
 
-	if stream.lexer == nil || stream.lexer.inner == nil {
+	if stream.lexer == nil {
 		stream.exhausted = true
 		return
 	}
 
 	for len(stream.buffer) < count {
-		token := stream.lexer.nextToken()
+		token := foldTokens(stream)
 		if token.Kind == EOF {
 			stream.eof = token
 			stream.exhausted = true
@@ -203,4 +212,130 @@ func (stream *TokenStream) ensure(count int) {
 		}
 		stream.buffer = append(stream.buffer, token)
 	}
+}
+
+// ensureRaw buffers scanner tokens only for folding lookahead. These tokens are
+// never exposed directly through Peek, Next, or Previous.
+func (stream *TokenStream) ensureRaw(count int) {
+	if count <= len(stream.rawBuffer) || stream.rawExhausted {
+		return
+	}
+	if stream.lexer == nil {
+		stream.rawExhausted = true
+		return
+	}
+
+	for len(stream.rawBuffer) < count {
+		token := stream.lexer.nextToken()
+		if token.Kind == EOF {
+			stream.eof = token
+			stream.rawExhausted = true
+			break
+		}
+		stream.rawBuffer = append(stream.rawBuffer, token)
+	}
+}
+
+func (stream *TokenStream) peekRaw(n int) Token {
+	stream.ensureRaw(n + 1)
+	if n < len(stream.rawBuffer) {
+		return stream.rawBuffer[n]
+	}
+	return stream.eof
+}
+
+func (stream *TokenStream) nextRaw() Token {
+	stream.ensureRaw(1)
+	if len(stream.rawBuffer) == 0 {
+		return stream.eof
+	}
+
+	token := stream.rawBuffer[0]
+	stream.rawBuffer[0] = Token{}
+	stream.rawBuffer = stream.rawBuffer[1:]
+	if len(stream.rawBuffer) == 0 {
+		stream.rawBuffer = nil
+	}
+	return token
+}
+
+func (stream *TokenStream) foldDotted(first Token) (Token, string) {
+	last := first
+	var value strings.Builder
+	value.WriteString(first.Value)
+
+	for stream.rawStartsDottedSegment(last) {
+		dot := stream.nextRaw()
+		segment := stream.nextRaw()
+		if dot.Kind != DOT || !tokensAdjacent(last, dot) ||
+			(segment.Kind != IDENTIFIER && segment.Kind != KEYWORD) || !tokensAdjacent(dot, segment) {
+			// rawStartsDottedSegment guarantees this shape; retain a defensive
+			// fallback without discarding an unexpected scanner token.
+			stream.rawBuffer = append([]Token{dot, segment}, stream.rawBuffer...)
+			break
+		}
+		value.WriteString(dot.Value)
+		value.WriteString(segment.Value)
+		last = segment
+	}
+	return last, value.String()
+}
+
+func (stream *TokenStream) rawStartsDottedSegment(after Token) bool {
+	if stream == nil || stream.lexer == nil || after.EndPos == nil {
+		return false
+	}
+	end := after.EndPos.Idx
+	if end < 0 || end+1 >= len(stream.lexer.source) || stream.lexer.source[end] != '.' ||
+		!isAlpha(stream.lexer.source[end+1]) {
+		return false
+	}
+
+	dot := stream.peekRaw(0)
+	segment := stream.peekRaw(1)
+	return dot.Kind == DOT && tokensAdjacent(after, dot) &&
+		(segment.Kind == IDENTIFIER || segment.Kind == KEYWORD) && tokensAdjacent(dot, segment)
+}
+
+func (stream *TokenStream) rawByteAtEnd(token Token) byte {
+	if stream == nil || stream.lexer == nil || token.EndPos == nil {
+		return 0
+	}
+	end := token.EndPos.Idx
+	if end < 0 || end >= len(stream.lexer.source) {
+		return 0
+	}
+	return stream.lexer.source[end]
+}
+
+func (stream *TokenStream) followedByCall(token Token) bool {
+	if stream == nil || stream.lexer == nil || token.EndPos == nil {
+		return false
+	}
+	source := stream.lexer.source
+	for i := token.EndPos.Idx; i < len(source); {
+		switch {
+		case source[i] == ' ' || source[i] == '\t' || source[i] == '\f' || source[i] == '\r' || source[i] == '\n':
+			i++
+		case strings.HasPrefix(source[i:], "//"):
+			if end := strings.IndexAny(source[i+2:], "\r\n"); end >= 0 {
+				i += 2 + end
+			} else {
+				return false
+			}
+		case strings.HasPrefix(source[i:], "/*"):
+			if end := strings.Index(source[i+2:], "*/"); end >= 0 {
+				i += 2 + end + 2
+			} else {
+				return false
+			}
+		default:
+			return source[i] == '('
+		}
+	}
+	return false
+}
+
+func tokensAdjacent(left, right Token) bool {
+	return left.EndPos != nil && right.StartPos != nil && left.EndPos.Idx == right.StartPos.Idx
 }

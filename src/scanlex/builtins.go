@@ -2,25 +2,26 @@ package scanlex
 
 import (
 	"fmt"
+	"strings"
 )
 
 // TokenKind represents the type of a lexical token.
 type TokenKind int
 
 const (
-	EOF                 TokenKind = iota // 0
-	NUMBER                               // 1
-	CHAR                                 // 2
-	BOOL                                 // 3
-	STRING                               // 4
-	IDENTIFIER                           // 5
-	COMPOSITE_IDENTIFER                  // 6
+	EOF                  TokenKind = iota // 0
+	NUMBER                                // 1
+	CHAR                                  // 2
+	BOOL                                  // 3
+	STRING                                // 4
+	IDENTIFIER                            // 5
+	COMPOSITE_IDENTIFIER                  // 6
 
 	// Keywords
 	KEYWORD // 7
 
-	BUILT_INS_FOL     // 8
-	CUSTOM_DIRECTIVES // 9
+	BUILT_INS_FOL      // 8
+	CUSTOM_ANNOT_DECOR // 9
 
 	// Grouping & Braces
 	OPEN_BRACKET  // 10 [
@@ -90,9 +91,9 @@ const (
 	NEWLINE           //57 \n\r
 	SPACE             //58
 	DBL_COLON         // 59 ::
-	CARET_EQGT        // 60 ^=>
+	POW_EQUALS        // 60 **=
 	UNDERSCORE        // 61 _
-	EQ_GT             //62 =>
+	PERCENTILE_EQUALS //62 %=
 	DOT_DOT_LT        //63 ..<
 	LT_DOT_DOT        //64 <..
 	LT_DOT_DOT_LT     //65 <..<
@@ -108,32 +109,22 @@ const (
 	METHOD_CALL       // 75
 	ARROW_PIPE        //76 ->|
 	UNKNOWN           //77
-	POW_EQUALS        // 78 **=
-	PERCENTILE_EQUALS //79 %=
-	UDT               // 80
-	COMMENTS          // 81
 
+	UDT // 78
+	CUSTOM_OPERATOR
 )
 
 type SubKind int
 
 const (
-	TYPE SubKind = iota
-	COLLECTION
-	KIND
-	SIGILS
-	TWIGILS
-	CONSTANTS
+	SIGILS SubKind = iota
 	DIRECTIVES
-	STATMENT_EXPR
+	STATEMENT_EXPR
 	METHOD
 	SPECIAL_METHOD
 	LABEL_LITERAL
-	DISCARD_WILD_CJAR
+	DISCARD_WILD_CHAR
 	BINDVAR
-	CONTEXT_SIGIL
-	CONTEXT_TWIGIL
-	CUSTOM_OPERATOR
 	OPERATORS
 	OPERATOR_SOURCE
 	NA
@@ -152,89 +143,90 @@ const (
 
 // TokenKindString returns the human-readable string name for a TokenKind.
 func TokenKindString(kind TokenKind) string {
-	switch any(kind) {
-	case EOF:
-		return "eof"
-	case NUMBER:
-		return "number"
-	case STRING:
-		return "string"
-	case IDENTIFIER:
-		return "identifier"
-	case OPEN_BRACKET:
-		return "open_bracket"
-	case CLOSE_BRACKET:
-		return "close_bracket"
-	case OPEN_CURLY:
-		return "open_curly"
-	case CLOSE_CURLY:
-		return "close_curly"
-	case OPEN_PAREN:
-		return "open_paren"
-	case CLOSE_PAREN:
-		return "close_paren"
-	case ASSIGNMENT:
-		return "assignment"
-	case EQUALS:
-		return "equals"
-	case NOT_EQUALS:
-		return "not_equals"
-	case NOT:
-		return "not"
-	case LESS:
-		return "less"
-	case LESS_EQUALS:
-		return "less_equals"
-	case GREATER:
-		return "greater"
-	case GREATER_EQUALS:
-		return "greater_equals"
-	case OR:
-		return "or"
-	case AND:
-		return "and"
-	case DOT:
-		return "dot"
-	case DOT_DOT:
-		return "dot_dot"
-	case SEMI_COLON:
-		return "semi colon"
-	case COLON:
-		return "colon"
-	case QUESTION:
-		return "question"
-	case COMMA:
-		return "comma"
-	case MINUS:
-		return "dash"
-	case SLASH:
-		return "slash"
-	case STAR:
-		return "star"
-	case PERCENT:
-		return "percent"
-	case KEYWORD:
-		return "keyword"
-	case UNKNOWN:
-		return "UNKNOWN"
+	return fmt.Sprintf("(%d)", kind)
 
-	default:
-		return fmt.Sprintf("unknown(%d)", kind)
-	}
 }
 
-func foldTokens(lex *lexer) []Token {
-	nTokens := make([]Token, 0)
-	for {
-		if lex.isEof() {
-			break
-		}
-
-		Token_ := lex.currentToken()
-		if Token_.Kind == IDENTIFIER || Token_.Kind == KEYWORD || Token_.Kind == AT {
-
-			return nTokens
-		}
+// foldTokens consumes one raw scanner token, plus any immediately-adjacent
+// tokens that form the same parser-facing lexeme. Whitespace and newlines are
+// deliberately not folded away; they remain ordinary stream tokens.
+func foldTokens(stream *TokenStream) Token {
+	first := stream.nextRaw()
+	if first.Kind == EOF {
+		return first
 	}
-	return nTokens
+
+	// Any syntactically valid @@name is kept whole for the parser. The parser,
+	// rather than the scanner, decides whether that special method is allowed.
+	if strings.HasPrefix(first.Value, "@@") && isValidIdentifierLexeme(first.Value[2:]) {
+		return refold(first, first, BUILT_INS_FOL, SPECIAL_METHOD, first.Value)
+	}
+
+	// Metadata names are folded through their last adjacent dotted segment.
+	// The co namespace is language owned; all other names are resolved later as
+	// user annotations/decorators.
+	if first.Kind == AT && len(first.Value) > 1 {
+		last, value := stream.foldDotted(first)
+		if value == "@co" || strings.HasPrefix(value, "@co.") {
+			return refold(first, last, BUILT_INS_FOL, DIRECTIVES, value)
+		}
+		return refold(first, last, CUSTOM_ANNOT_DECOR, NA, value)
+	}
+
+	// co.* is one language-owned lexeme. A following call parenthesis makes it
+	// a method; co.operator and its property constants are operator-source
+	// spellings; all other paths are statement/type/expression built-ins.
+	if first.Kind == KEYWORD && first.Value == "co" && stream.rawStartsDottedSegment(first) {
+		last, value := stream.foldDotted(first)
+		subKind := STATEMENT_EXPR
+		if stream.followedByCall(last) {
+			subKind = METHOD
+		} else if value == "co.operator" || strings.HasPrefix(value, "co.operator.") {
+			subKind = OPERATOR_SOURCE
+		}
+		return refold(first, last, BUILT_INS_FOL, subKind, value)
+	}
+
+	// A label declaration is an apostrophe-prefixed identifier immediately
+	// followed by a colon. The colon remains a separate parser-facing token.
+	if first.Kind == SINGLE_QUOTE && stream.rawByteAtEnd(first) == ':' {
+		return refold(first, first, BUILT_INS_FOL, LABEL_LITERAL, first.Value)
+	}
+
+	if first.Kind == DOLLAR {
+		subKind := SIGILS
+		if len(first.Value) > 1 {
+			subKind = BINDVAR
+		}
+		return refold(first, first, BUILT_INS_FOL, subKind, first.Value)
+	}
+
+	if first.Kind == UNDERSCORE && first.Value == "_" {
+		return refold(first, first, BUILT_INS_FOL, DISCARD_WILD_CHAR, first.Value)
+	}
+
+	if first.SubKind == OPERATORS || IsPredeclaredOperatorSpelling(first.Value) {
+		return refold(first, first, BUILT_INS_FOL, OPERATORS, first.Value)
+	}
+
+	if first.Kind == CUSTOM_OPERATOR || first.Kind == UDT {
+		return refold(first, first, CUSTOM_OPERATOR, NA, first.Value)
+	}
+
+	if first.Kind == IDENTIFIER && stream.rawStartsDottedSegment(first) {
+		last, value := stream.foldDotted(first)
+		return refold(first, last, COMPOSITE_IDENTIFIER, NA, value)
+	}
+
+	// Subkinds are meaningful only for language built-ins. Everything else is
+	// normalized to NA before it reaches the parser.
+	first.SubKind = NA
+	return first
+}
+
+func refold(first, last Token, kind TokenKind, subKind SubKind, value string) Token {
+	token := newUniqueToken(kind, subKind, value, first.StartPos, last.EndPos)
+	token.BoundaryBefore = first.BoundaryBefore
+	token.BoundaryAfter = last.BoundaryAfter
+	return token
 }

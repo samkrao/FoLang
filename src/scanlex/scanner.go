@@ -15,9 +15,8 @@ import (
 // Every remaining sequence of symbol characters is then consumed as one complete
 // run and classified by exact match; no shorter operator fallback exists.
 //
-// This switch is the lexical source of truth: direct Tokenize callers receive the same
-// whole-run operator spellings that the parser consumes. NEWLINE tokens are still
-// emitted here for cleanupLB to discard before the final stream is returned.
+// This switch is the lexical source of truth for the whole-run operator
+// spellings consumed by TokenStream.
 
 // scanAction says what the driver should do with a scanned span.
 type scanAction int
@@ -25,11 +24,10 @@ type scanAction int
 const (
 	// actionEmit pushes a token of the scanned kind and lexeme.
 	actionEmit scanAction = iota
-	// actionSkip consumes the span without producing a token: whitespace and
-	// comments. lines records how many line breaks it covered.
+	// actionSkip consumes a comment without producing a token. lines records
+	// how many line breaks it covered.
 	actionSkip
-	// actionNewline consumes a line break and pushes the NEWLINE token the old
-	// scanner pushed, which cleanupLB removes once scanning is complete.
+	// actionNewline consumes and emits one physical line-ending token.
 	actionNewline
 	// actionUnknown consumes a lexically invalid or unsupported span and emits
 	// it as one UNKNOWN token.
@@ -40,7 +38,7 @@ const (
 type scanned struct {
 	action  scanAction
 	kind    TokenKind
-	SubKind SubKind
+	subKind SubKind
 
 	length    int
 	lines     int
@@ -48,7 +46,7 @@ type scanned struct {
 }
 
 func emit(kind TokenKind, subKind SubKind, length int) scanned {
-	return scanned{action: actionEmit, kind: kind, SubKind: subKind, length: length}
+	return scanned{action: actionEmit, kind: kind, subKind: subKind, length: length}
 }
 
 func skip(length int) scanned {
@@ -77,12 +75,13 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 
 	switch {
 	// ---- line breaks -----------------------------------------------------
-	// One byte at a time, including for a CRLF pair: the previous scanner matched
-	// "\r\n" but advanced a single byte, so a CRLF produced two NEWLINE tokens. The
-	// parser normalizes line endings before scanning, so nothing reaches here with a
-	// CR in practice, and this keeps a direct Tokenize caller's stream unchanged.
+	// CRLF is one physical line ending; lone CR and LF are also accepted.
 	case c == '\r' || c == '\n':
-		return scanned{action: actionNewline, length: 1}, true
+		length := 1
+		if c == '\r' && len(src) > 1 && src[1] == '\n' {
+			length = 2
+		}
+		return scanned{action: actionNewline, length: length}, true
 
 	// ---- horizontal white space: " " | "\t" | "\f" -----------------------
 	case c == ' ' || c == '\t' || c == '\f':
@@ -90,7 +89,7 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 		for n < len(src) && (src[n] == ' ' || src[n] == '\t' || src[n] == '\f') {
 			n++
 		}
-		return skip(n), true
+		return emit(SPACE, NA, n), true
 
 	// ---- comments and the slash operator ---------------------------------
 	case c == '/':
@@ -187,7 +186,7 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 		if n := identifierLength(src); n > 1 {
 			return scanned{action: actionUnknown, length: n}, true
 		}
-		return emit(UNDERSCORE, DISCARD_WILD_CJAR, 1), true
+		return emit(UNDERSCORE, DISCARD_WILD_CHAR, 1), true
 
 	// fΦλ is the one non-ASCII hard-reserved word. It is recognized as an
 	// exact language-owned spelling without widening FoLang's ASCII identifier
@@ -259,7 +258,7 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 		if len(src) > 1 && isIdentifierContinuation(src[1]) {
 			return scanned{action: actionUnknown, length: 1 + identifierLength(src[1:])}, true
 		}
-		return emit(DOLLAR, CONTEXT_SIGIL, 1), true
+		return emit(DOLLAR, SIGILS, 1), true
 
 	// ---- brackets and braces ----------------------------------------------
 	case c == '[':
@@ -312,7 +311,7 @@ func (lex *lexer) scanSymbolicRun(src string) (scanned, bool) {
 		return emit(kind, OPERATORS, length), true
 	}
 	if languagePredeclaredOperatorSpellings[run] {
-		return emit(BUILT_INS_FOL, CUSTOM_OPERATOR, length), true
+		return emit(BUILT_INS_FOL, OPERATORS, length), true
 	}
 	if fixity, ok := lex.custom.match(run); ok {
 		before := explicitSymbolBoundaryBefore(lex.source, lex.pos)
@@ -320,7 +319,7 @@ func (lex *lexer) scanSymbolicRun(src string) (scanned, bool) {
 		if utf8.RuneCountInString(run) > 1 && !boundariesSatisfyFixity(fixity, before, after) {
 			return scanned{action: actionUnknown, length: length}, true
 		}
-		return emit(UDT, CUSTOM_OPERATOR, length), true
+		return emit(CUSTOM_OPERATOR, NA, length), true
 	}
 	if len(run) >= 3 && strings.Trim(run, "*") == "" {
 		return emit(STAR, NA, length), true
@@ -826,47 +825,39 @@ func containsInvalidSourceEncoding(source string) bool {
 	return false
 }
 
-// emitNewline pushes the NEWLINE token that marks a line break.
-//
-// cleanupLB drops these once scanning finishes; they exist so line bookkeeping happens
-// in one place. The lexeme is the literal "LSP" the previous scanner used, so a caller
-// inspecting the raw stream sees exactly what it saw before.
-func (lex *lexer) emitNewline(_ string) {
+// emitNewline constructs one NEWLINE token and advances the scanner to the
+// beginning of the following physical line. A CRLF pair is one token and one
+// line advance.
+func (lex *lexer) emitNewline(lexeme string) Token {
 	start := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
-	lex.posi = start
-	lex.advanceN(1)
-	end := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
-	lex.push(newUniqueToken(NEWLINE, NA, "LSP", start.Copy(), end))
-	lex.posi = end
+	lex.advanceN(len(lexeme))
 	lex.advanceline(1)
+	end := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
+	return newUniqueToken(NEWLINE, NA, lexeme, start.Copy(), end)
 }
 
-// emitToken pushes the token a scan decided on, keeping the position bookkeeping the
-// handlers used: the span runs from the cursor before the lexeme to the cursor after
-// it, and lex.posi is left at the end so the next token starts from there.
-func (lex *lexer) emitToken(kind TokenKind, lexeme string) {
+// emitToken constructs the token selected by the scanner. Its source span runs
+// from the cursor before the lexeme to the cursor immediately after it.
+func (lex *lexer) emitToken(kind TokenKind, subKind SubKind, lexeme string) Token {
 	if DEBUG_TRACE {
 		defer lex.debugTraceEnd(lex.debugTraceBegin("emitToken", kind, lexeme))
 	}
 	boundaryBefore := explicitSymbolBoundaryBefore(lex.source, lex.pos)
 	boundaryAfter := explicitSymbolBoundaryAfter(lex.source, lex.pos+len(lexeme))
 	start := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
-	lex.posi = start
 	lex.advanceN(len(lexeme))
 	end := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
 
+	var token Token
 	switch kind {
 	case IDENTIFIER:
-		lex.emitIdentifier(lexeme, start, end)
+		token = lex.emitIdentifier(lexeme, start, end)
 	default:
-		lex.push(newUniqueToken(kind, NA, lexeme, start.Copy(), end))
+		token = newUniqueToken(kind, subKind, lexeme, start.Copy(), end)
 	}
-	last := len(lex.Tokens) - 1
-	if last >= 0 {
-		lex.Tokens[last].BoundaryBefore = boundaryBefore
-		lex.Tokens[last].BoundaryAfter = boundaryAfter
-	}
-	lex.posi = end
+	token.BoundaryBefore = boundaryBefore
+	token.BoundaryAfter = boundaryAfter
+	return token
 }
 
 func tracePreview(src string) string {
@@ -881,7 +872,7 @@ func tracePreview(src string) string {
 // DECISION-LEX-001/006: an identifier carries single underscores between nonempty
 // alphanumeric segments and never ends in one. Reserved_lu then gives a reserved word
 // its KEYWORD or RESERVEDWORD kind instead of letting it pass as an IDENTIFIER.
-func (lex *lexer) emitIdentifier(lexeme string, start, end *helpers.Position) {
+func (lex *lexer) emitIdentifier(lexeme string, start, end *helpers.Position) Token {
 	kind := IDENTIFIER
 	subKind := NA
 	if !isValidIdentifierLexeme(lexeme) {
@@ -892,5 +883,5 @@ func (lex *lexer) emitIdentifier(lexeme string, start, end *helpers.Position) {
 		kind = k
 
 	}
-	lex.push(newUniqueToken(kind, subKind, lexeme, start.Copy(), end))
+	return newUniqueToken(kind, subKind, lexeme, start.Copy(), end)
 }

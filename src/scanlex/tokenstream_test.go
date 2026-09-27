@@ -12,17 +12,17 @@ func TestTokenStreamPeekBuffersOnlyRequestedLookahead(t *testing.T) {
 	if got := len(stream.buffer); got != 1 {
 		t.Fatalf("Peek(0) buffered %d tokens, want 1", got)
 	}
-	if got := stream.lexer.inner.pos; got != len("alpha") {
+	if got := stream.lexer.pos; got != len("alpha") {
 		t.Fatalf("Peek(0) scanned through byte %d, want %d", got, len("alpha"))
 	}
 
-	if got := stream.Peek(2); got.Value != "gamma" {
-		t.Fatalf("Peek(2) = %q, want gamma", got.Value)
+	if got := stream.Peek(2); got.Value != "beta" {
+		t.Fatalf("Peek(2) = %q, want beta", got.Value)
 	}
 	if got := len(stream.buffer); got != 3 {
 		t.Fatalf("Peek(2) buffered %d tokens, want 3", got)
 	}
-	if got := stream.lexer.inner.pos; got >= len(source) {
+	if got := stream.lexer.pos; got >= len(source) {
 		t.Fatalf("Peek(2) eagerly scanned the complete source through byte %d", got)
 	}
 }
@@ -36,21 +36,24 @@ func TestTokenStreamNextBuffersOneToken(t *testing.T) {
 	if len(stream.buffer) != 0 {
 		t.Fatalf("Next() retained %d unrequested tokens", len(stream.buffer))
 	}
-	if got := stream.lexer.inner.pos; got != len("alpha") {
+	if got := stream.lexer.pos; got != len("alpha") {
 		t.Fatalf("Next() scanned through byte %d, want %d", got, len("alpha"))
 	}
 
+	if got := stream.Next(); got.Kind != SPACE || got.Value != " " {
+		t.Fatalf("second Next() = (%v, %q), want SPACE", got.Kind, got.Value)
+	}
 	if got := stream.Next(); got.Value != "beta" {
-		t.Fatalf("second Next() = %q, want beta", got.Value)
+		t.Fatalf("third Next() = %q, want beta", got.Value)
 	}
 	if got := stream.Next(); got.Kind != EOF {
-		t.Fatalf("third Next() kind = %v, want EOF", got.Kind)
+		t.Fatalf("fourth Next() kind = %v, want EOF", got.Kind)
 	}
 	if got := stream.Next(); got.Kind != EOF {
 		t.Fatalf("EOF was not stable: subsequent kind = %v", got.Kind)
 	}
-	if got := len(stream.history); got != 2 {
-		t.Fatalf("EOF calls changed consumed history length to %d, want 2", got)
+	if got := len(stream.history); got != 3 {
+		t.Fatalf("EOF calls changed consumed history length to %d, want 3", got)
 	}
 }
 
@@ -77,8 +80,8 @@ func TestTokenStreamPreviousTracksOnlyConsumedTokens(t *testing.T) {
 	if _, ok := stream.Previous(1); ok {
 		t.Fatal("Previous(1) succeeded before a token was consumed")
 	}
-	if got := stream.Peek(2); got.Value != "gamma" {
-		t.Fatalf("Peek(2) = %q, want gamma", got.Value)
+	if got := stream.Peek(2); got.Value != "beta" {
+		t.Fatalf("Peek(2) = %q, want beta", got.Value)
 	}
 	if _, ok := stream.Previous(1); ok {
 		t.Fatal("Peek unexpectedly added a token to consumed history")
@@ -94,14 +97,20 @@ func TestTokenStreamPreviousTracksOnlyConsumedTokens(t *testing.T) {
 		t.Fatal("Previous(2) succeeded with only one consumed token")
 	}
 
+	if got := stream.Next(); got.Kind != SPACE {
+		t.Fatalf("second Next() kind = %v, want SPACE", got.Kind)
+	}
 	if got := stream.Next(); got.Value != "beta" {
-		t.Fatalf("second Next() = %q, want beta", got.Value)
+		t.Fatalf("third Next() = %q, want beta", got.Value)
 	}
 	if got, ok := stream.Previous(1); !ok || got.Value != "beta" {
 		t.Fatalf("Previous(1) = (%q, %v), want (beta, true)", got.Value, ok)
 	}
-	if got, ok := stream.Previous(2); !ok || got.Value != "alpha" {
-		t.Fatalf("Previous(2) = (%q, %v), want (alpha, true)", got.Value, ok)
+	if got, ok := stream.Previous(2); !ok || got.Kind != SPACE {
+		t.Fatalf("Previous(2) = (%v, %v), want (SPACE, true)", got.Kind, ok)
+	}
+	if got, ok := stream.Previous(3); !ok || got.Value != "alpha" {
+		t.Fatalf("Previous(3) = (%q, %v), want (alpha, true)", got.Value, ok)
 	}
 }
 
@@ -113,4 +122,177 @@ func TestTokenStreamPreviousRejectsNonPositiveLookbehind(t *testing.T) {
 		}
 	}()
 	stream.Previous(0)
+}
+
+func TestScannerPreservesTokenSubKinds(t *testing.T) {
+	stream := NewTokenStream([]byte("_ @@new $ $2 +"), "test.fol")
+	want := []struct {
+		kind    TokenKind
+		subKind SubKind
+		value   string
+	}{
+		{BUILT_INS_FOL, DISCARD_WILD_CHAR, "_"},
+		{BUILT_INS_FOL, SPECIAL_METHOD, "@@new"},
+		{BUILT_INS_FOL, SIGILS, "$"},
+		{BUILT_INS_FOL, BINDVAR, "$2"},
+		{BUILT_INS_FOL, OPERATORS, "+"},
+	}
+
+	for i, expected := range want {
+		got := stream.Next()
+		for got.Kind == SPACE {
+			got = stream.Next()
+		}
+		if got.Kind != expected.kind || got.SubKind != expected.subKind || got.Value != expected.value {
+			t.Fatalf("token %d = (%v, %v, %q), want (%v, %v, %q)",
+				i, got.Kind, got.SubKind, got.Value,
+				expected.kind, expected.subKind, expected.value)
+		}
+	}
+}
+
+func TestFoldTokensClassifiesParserFacingLexemes(t *testing.T) {
+	custom := NewCustomOperatorsWithSpecs([]OperatorSpec{{Symbol: "%%", Fixity: "infix"}})
+	stream := NewTokenStreamWithOperators([]byte(
+		"@co.dap.generic co.int co.out.println () 'outer: $ $12 @@custom _ + \u222a %% alpha.beta @pkg.meta",
+	), "test.fol", custom)
+
+	want := []struct {
+		kind    TokenKind
+		subKind SubKind
+		value   string
+	}{
+		{BUILT_INS_FOL, DIRECTIVES, "@co.dap.generic"},
+		{BUILT_INS_FOL, STATEMENT_EXPR, "co.int"},
+		{BUILT_INS_FOL, METHOD, "co.out.println"},
+		{OPEN_PAREN, NA, "("},
+		{CLOSE_PAREN, NA, ")"},
+		{BUILT_INS_FOL, LABEL_LITERAL, "'outer"},
+		{BUILT_INS_FOL, OPERATORS, ":"},
+		{BUILT_INS_FOL, SIGILS, "$"},
+		{BUILT_INS_FOL, BINDVAR, "$12"},
+		{BUILT_INS_FOL, SPECIAL_METHOD, "@@custom"},
+		{BUILT_INS_FOL, DISCARD_WILD_CHAR, "_"},
+		{BUILT_INS_FOL, OPERATORS, "+"},
+		{BUILT_INS_FOL, OPERATORS, "\u222a"},
+		{CUSTOM_OPERATOR, NA, "%%"},
+		{COMPOSITE_IDENTIFIER, NA, "alpha.beta"},
+		{CUSTOM_ANNOT_DECOR, NA, "@pkg.meta"},
+		{EOF, NA, "EOF"},
+	}
+
+	for i, expected := range want {
+		got := nextNonWhitespace(stream)
+		if got.Kind != expected.kind || got.SubKind != expected.subKind || got.Value != expected.value {
+			t.Fatalf("token %d = (%v, %v, %q), want (%v, %v, %q)",
+				i, got.Kind, got.SubKind, got.Value,
+				expected.kind, expected.subKind, expected.value)
+		}
+	}
+}
+
+func TestFoldTokensRecognizesOperatorSourceAndPreservesFullSpan(t *testing.T) {
+	stream := NewTokenStream([]byte("co.operator.fixity.infix"), "test.fol")
+	got := stream.Next()
+	if got.Kind != BUILT_INS_FOL || got.SubKind != OPERATOR_SOURCE || got.Value != "co.operator.fixity.infix" {
+		t.Fatalf("operator source = (%v, %v, %q), want BUILT_INS_FOL/OPERATOR_SOURCE",
+			got.Kind, got.SubKind, got.Value)
+	}
+	if got.StartPos == nil || got.EndPos == nil || got.StartPos.Idx != 0 || got.EndPos.Idx != len(got.Value) {
+		t.Fatalf("folded span = %#v..%#v, want byte range 0..%d", got.StartPos, got.EndPos, len(got.Value))
+	}
+}
+
+func TestFoldTokensDoesNotJoinAcrossComment(t *testing.T) {
+	stream := NewTokenStream([]byte("alpha/* separator */.beta"), "test.fol")
+	first := stream.Next()
+	if first.Kind != IDENTIFIER || first.SubKind != NA || first.Value != "alpha" {
+		t.Fatalf("first token = (%v, %v, %q), want IDENTIFIER/NA alpha", first.Kind, first.SubKind, first.Value)
+	}
+	second := stream.Next()
+	if second.Kind != BUILT_INS_FOL || second.SubKind != OPERATORS || second.Value != "." {
+		t.Fatalf("second token = (%v, %v, %q), want BUILT_INS_FOL/OPERATORS dot", second.Kind, second.SubKind, second.Value)
+	}
+}
+
+func TestFoldTokensUsesNAForNonBuiltins(t *testing.T) {
+	stream := NewTokenStream([]byte("name 'label 42\n"), "test.fol")
+	for {
+		token := stream.Next()
+		if token.Kind == EOF {
+			break
+		}
+		if token.Kind != BUILT_INS_FOL && token.SubKind != NA {
+			t.Fatalf("non-builtin token (%v, %q) has subkind %v, want NA", token.Kind, token.Value, token.SubKind)
+		}
+	}
+}
+
+func TestFoldTokensKeepsInvalidLexemesUnknownAndWhole(t *testing.T) {
+	stream := NewTokenStream([]byte("$0 @@bad_ @co..thing bad__name"), "test.fol")
+	want := []string{"$0", "@@bad_", "@co..thing", "bad__name"}
+	for i, value := range want {
+		token := nextNonWhitespace(stream)
+		if token.Kind != UNKNOWN || token.SubKind != NA || token.Value != value {
+			t.Fatalf("invalid token %d = (%v, %v, %q), want UNKNOWN/NA %q",
+				i, token.Kind, token.SubKind, token.Value, value)
+		}
+	}
+}
+
+func nextNonWhitespace(stream *TokenStream) Token {
+	for {
+		token := stream.Next()
+		if token.Kind != SPACE && token.Kind != NEWLINE {
+			return token
+		}
+	}
+}
+
+func TestScannerCollectsSpacesAndNewlinesButSkipsComments(t *testing.T) {
+	stream := NewTokenStream([]byte("a \t// ignored\r\n\f b"), "test.fol")
+	want := []struct {
+		kind  TokenKind
+		value string
+	}{
+		{IDENTIFIER, "a"},
+		{SPACE, " \t"},
+		{NEWLINE, "\r\n"},
+		{SPACE, "\f "},
+		{IDENTIFIER, "b"},
+		{EOF, "EOF"},
+	}
+
+	for i, expected := range want {
+		got := stream.Next()
+		if got.Kind != expected.kind || got.Value != expected.value {
+			t.Fatalf("token %d = (%v, %q), want (%v, %q)",
+				i, got.Kind, got.Value, expected.kind, expected.value)
+		}
+		if got.Kind == NEWLINE && got.EndPos.Ln != 2 {
+			t.Fatalf("newline end line = %d, want 2", got.EndPos.Ln)
+		}
+	}
+}
+
+func TestScannerEOFUsesActualSourcePosition(t *testing.T) {
+	const source = "alpha\nbeta"
+	stream := NewTokenStream([]byte(source), "test.fol")
+
+	for stream.Next().Kind != EOF {
+	}
+	eof := stream.Next()
+	if eof.StartPos == nil || eof.EndPos == nil {
+		t.Fatal("EOF has nil source positions")
+	}
+	if eof.StartPos.Idx != len(source) || eof.EndPos.Idx != len(source) {
+		t.Fatalf("EOF indexes = (%d, %d), want (%d, %d)",
+			eof.StartPos.Idx, eof.EndPos.Idx, len(source), len(source))
+	}
+	if eof.StartPos.Ln != 2 || eof.EndPos.Ln != 2 {
+		t.Fatalf("EOF lines = (%d, %d), want (2, 2)", eof.StartPos.Ln, eof.EndPos.Ln)
+	}
+	if eof.StartPos.Fn != "test.fol" || eof.EndPos.Fn != "test.fol" {
+		t.Fatalf("EOF filenames = (%q, %q), want test.fol", eof.StartPos.Fn, eof.EndPos.Fn)
+	}
 }

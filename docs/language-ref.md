@@ -638,15 +638,13 @@ fΦλ
 #### Comparison and Type-Relation Operators
 
 ```text
-==  !=  <  >  <=  >=  <:  :>
+==  !=  <  >  <=  >=  
 ```
-
-`<:` denotes subtype relation and `:>` denotes supertype relation. These relation operators are non-associative.
 
 #### Assignment and Declaration Operators
 
 ```text
-=  ?=  :=  ::=  +=  -=  *=  /=  %=  **=  &=  ^=  |=
+=  ?=  :=  ::=  +=  -=  *=  /=  %=  **=  
 ```
 
 #### Range, Function, Dispatch, and Structural Tokens
