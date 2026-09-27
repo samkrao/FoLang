@@ -28,6 +28,7 @@ func main() {
 	fname = parser.String("f", "filename", &argparse.Options{Required: false, Help: "File name"})
 	tokenizeonly = parser.Flag("t", "tokonly", &argparse.Options{Required: false, Help: "tokenize only"})
 
+	args := os.Args
 	err := parser.Parse(args)
 
 	if err != nil || len(args) < 2 {
@@ -46,28 +47,28 @@ func main() {
 	}
 
 	file, source, status := preparser.FetchSource(*fname)
-	installDir, err := preparser.InstalledStandardArtifactPath()
-	if err != nil {
-		fmt.Println("Install folder not found!")
-		os.Exit(1)
-
-	}
 
 	if status == "success" {
-		symbols := preparser.PreParse(installDir, *fname)
 		stream := scanlex.NewTokenStream(source, file)
 
 		if *tokenizeonly {
 			for !stream.AtEOF() {
-				fmt.Println(stream.Next())
+				stream.Next().Println()
 			}
-			os.Exit(0)
+			return
 		}
 
+		installDir, err := preparser.InstalledStandardArtifactPath()
+		if err != nil {
+			fmt.Println("Install folder not found!")
+			os.Exit(1)
+		}
+
+		symbols := preparser.PreParse(installDir, *fname)
 		parser := preparser.Init(*fname, installDir, symbols, stream)
 		ast := parser.Parse()
 
-		fmt.Sprint(ast)
+		fmt.Println(ast)
 	} else {
 		if status == "more" {
 			fmt.Print("More than on fol file present ")

@@ -1,7 +1,6 @@
 package preparser
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"slices"
@@ -63,10 +62,24 @@ func PreParse(installDir string, projectDir string) *symboltable.FolangSymbols {
 }
 
 func FetchSource(folderPath string) (string, []byte, string) {
+	info, err := os.Stat(folderPath)
+	if err != nil {
+		return "", nil, "fileread"
+	}
+	if !info.IsDir() {
+		if filepath.Ext(folderPath) != ".fol" {
+			return "", nil, "fileread"
+		}
+		sourceBytes, err := os.ReadFile(folderPath)
+		if err != nil {
+			return "", nil, "fileread"
+		}
+		return folderPath, sourceBytes, "success"
+	}
 
 	entries, err := os.ReadDir(folderPath)
 	if err != nil {
-		log.Fatal(err)
+		return "", nil, "fileread"
 	}
 	filenames := []string{}
 	for _, entry := range entries {
@@ -75,10 +88,14 @@ func FetchSource(folderPath string) (string, []byte, string) {
 			filenames = append(filenames, fullPath)
 		}
 	}
+	if len(filenames) == 0 {
+		return "", nil, "fileread"
+	}
 	if len(filenames) > 1 {
 		return "", nil, "more"
 	}
-	if !slices.Contains(filenames, "appl.fol") && !slices.Contains(filenames, "component.fol") {
+	base := filepath.Base(filenames[0])
+	if !slices.Contains([]string{"appl.fol", "component.fol"}, base) {
 		return "", nil, "both"
 	}
 	sourceBytes, err := os.ReadFile(filenames[0])
