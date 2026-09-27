@@ -67,7 +67,7 @@ The project originated in **2025** and continues to evolve through active langua
 ## Name
 
 The canonical name of the language is **FΦλang**, where the lowercase Greek
-lambda (`λ`) replaces the `L` and phi(`Φ`) replaces the `o` in **FoLang**.
+lambda (`λ`) replaces the `L` and phi (`Φ`) replaces the `o` in **FoLang**.
 
 **FoLang** is the canonical ASCII representation of **FΦλang**. It is used where
 Unicode is unavailable, inconvenient, or unsupported, including repository
