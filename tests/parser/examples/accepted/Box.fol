@@ -1,7 +1,0 @@
-@sample(
-    function_type=Predicate,
-    union_type=IntOrString,
-    pointer_type=IntDblPtr,
-    numeric_suffix=65u
-)
-_ co.lang.struct = {}

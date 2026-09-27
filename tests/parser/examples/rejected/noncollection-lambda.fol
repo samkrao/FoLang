@@ -1,1 +1,0 @@
-value := consume(|x| => x);

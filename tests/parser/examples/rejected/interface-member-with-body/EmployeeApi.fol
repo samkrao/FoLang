@@ -1,3 +1,0 @@
-_ co.lang.interface = {
-    storeEmployee(emp Employee)->(Employee) = { }
-}

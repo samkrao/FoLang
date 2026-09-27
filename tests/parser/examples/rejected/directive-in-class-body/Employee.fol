@@ -1,4 +1,0 @@
-_ co.lang.class = {
-    @co.ddap.alias(co.out, as="out")
-    id co.lang.int;
-}

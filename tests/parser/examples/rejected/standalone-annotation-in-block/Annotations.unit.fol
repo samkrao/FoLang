@@ -1,5 +1,0 @@
-_ co.lang.unit = {
-    run()->() = {
-        @example
-    }
-}

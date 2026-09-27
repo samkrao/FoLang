@@ -1,2 +1,0 @@
-offset := 1;
-let adjust(value) = value + offset

@@ -1,8 +1,0 @@
-@co.dap.lazy
-literalPattern(0) => 0;
-bindingPattern(value).where(value > 0) => value;
-constructorPattern(Some(value)) => value;
-recordPattern(Employee{id: value, name: _}) => value;
-tuplePattern((left, right)) => left;
-offset := 1;
-let captured(value) = value + offset;

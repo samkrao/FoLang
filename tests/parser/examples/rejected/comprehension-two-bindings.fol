@@ -1,1 +1,0 @@
-pairs := for (x <- first, y <- second).yield(x);

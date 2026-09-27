@@ -38,15 +38,17 @@ const (
 
 // scanned is one lexical decision: what was matched, how long it is, and what to do.
 type scanned struct {
-	action    scanAction
-	kind      TokenKind
+	action  scanAction
+	kind    TokenKind
+	SubKind SubKind
+
 	length    int
 	lines     int
 	endColumn int
 }
 
-func emit(kind TokenKind, length int) scanned {
-	return scanned{action: actionEmit, kind: kind, length: length}
+func emit(kind TokenKind, subKind SubKind, length int) scanned {
+	return scanned{action: actionEmit, kind: kind, SubKind: subKind, length: length}
 }
 
 func skip(length int) scanned {
@@ -59,7 +61,7 @@ func skip(length int) scanned {
 // the driver always makes progress.
 func (lex *lexer) scanToken(src string) (scanned, bool) {
 	if DEBUG_TRACE {
-		defer lex.debugTraceEnd(lex.debugTraceBegin("scanToken", INVALID, tracePreview(src)))
+		defer lex.debugTraceEnd(lex.debugTraceBegin("scanToken", UNKNOWN, tracePreview(src)))
 	}
 	// Custom operators are classified inside scanBuiltin only after comments,
 	// literals, and closed composite spellings receive their required priority.
@@ -69,7 +71,7 @@ func (lex *lexer) scanToken(src string) (scanned, bool) {
 // scanBuiltin decides the next lexical unit using the language's own spellings.
 func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 	if DEBUG_TRACE {
-		defer lex.debugTraceEnd(lex.debugTraceBegin("scanBuiltin", INVALID, tracePreview(src)))
+		defer lex.debugTraceEnd(lex.debugTraceBegin("scanBuiltin", UNKNOWN, tracePreview(src)))
 	}
 	c := src[0]
 
@@ -127,7 +129,7 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 			if containsInvalidSourceEncoding(src[:n]) {
 				return scanned{action: actionUnknown, length: n}, true
 			}
-			return emit(STRING, n), true
+			return emit(STRING, NA, n), true
 		}
 		return scanned{action: actionUnknown, length: unterminatedStringLength(src)}, true
 
@@ -139,7 +141,7 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 			if containsInvalidSourceEncoding(src[:n]) {
 				return scanned{action: actionUnknown, length: n}, true
 			}
-			return emit(CHAR, n), true
+			return emit(CHAR, NA, n), true
 		}
 		// label-identifier, tried only after the character literal, which IS the
 		// label-identifier-guard: a complete `'c'` has already been taken above,
@@ -150,7 +152,7 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 			if !isValidIdentifierLexeme(src[1:n]) {
 				return scanned{action: actionUnknown, length: n}, true
 			}
-			return emit(LABEL_IDENTIFIER, n), true
+			return emit(SINGLE_QUOTE, LABEL_LITERAL, n), true
 		}
 		// A span that closes on the same line is a character literal that the
 		// literal rule declined, so it is named as one. Falling through to the
@@ -173,7 +175,7 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 		if length, _ := malformedNumericLiteral(src); length > 0 {
 			return scanned{action: actionUnknown, length: length}, true
 		}
-		return emit(NUMBER, numericLiteralLength(src)), true
+		return emit(NUMBER, NA, numericLiteralLength(src)), true
 	case c == '.' && len(src) > 1 && isDigit(src[1]):
 		return scanned{action: actionUnknown, length: numericCandidateLength(src)}, true
 
@@ -185,7 +187,7 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 		if n := identifierLength(src); n > 1 {
 			return scanned{action: actionUnknown, length: n}, true
 		}
-		return emit(DISCARD_WILD_VAR, 1), true
+		return emit(UNDERSCORE, DISCARD_WILD_CJAR, 1), true
 
 	// fΦλ is the one non-ASCII hard-reserved word. It is recognized as an
 	// exact language-owned spelling without widening FoLang's ASCII identifier
@@ -196,10 +198,10 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 		return scanned{action: actionUnknown, length: len("fΦλ") + identifierLength(src[len("fΦλ"):])}, true
 	case strings.HasPrefix(src, "fΦλ") &&
 		(len(src) == len("fΦλ") || !isIdentifierContinuation(src[len("fΦλ")])):
-		return emit(RESERVEDWORD, len("fΦλ")), true
+		return emit(KEYWORD, NA, len("fΦλ")), true
 
 	case isAlpha(c):
-		return emit(IDENTIFIER, identifierLength(src)), true
+		return emit(IDENTIFIER, NA, identifierLength(src)), true
 
 	// ---- special methods and annotations ---------------------------------
 	case c == '@':
@@ -214,7 +216,7 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 			n := 2 + identifierLength(src[2:])
 			if n > 2 {
 				if slices.Contains(Special_methods, src[:n]) {
-					return emit(SPECIAL_METHODS, n), true
+					return emit(BUILT_INS_FOL, SPECIAL_METHOD, n), true
 				}
 				return scanned{action: actionUnknown, length: n}, true
 			}
@@ -231,7 +233,7 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 			if !isValidIdentifierLexeme(src[1:n]) {
 				return scanned{action: actionUnknown, length: n}, true
 			}
-			return emit(ATDAP, n), true
+			return emit(AT, DIRECTIVES, n), true
 		}
 		return lex.scanSymbolicRun(src)
 
@@ -252,33 +254,33 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 			if candidateEnd > n {
 				return scanned{action: actionUnknown, length: candidateEnd}, true
 			}
-			return emit(BIND_VAR, n), true
+			return emit(DOLLAR, BINDVAR, n), true
 		}
 		if len(src) > 1 && isIdentifierContinuation(src[1]) {
 			return scanned{action: actionUnknown, length: 1 + identifierLength(src[1:])}, true
 		}
-		return emit(CONTEXT_SIGIL_DOLLAR, 1), true
+		return emit(DOLLAR, CONTEXT_SIGIL, 1), true
 
 	// ---- brackets and braces ----------------------------------------------
 	case c == '[':
 		if strings.HasPrefix(src, "[:]") {
-			return emit(OB_COLON_CB, 3), true
+			return emit(OB_COLON_CB, NA, 3), true
 		}
-		return emit(OPEN_BRACKET, 1), true
+		return emit(OPEN_BRACKET, NA, 1), true
 	case c == ']':
-		return emit(CLOSE_BRACKET, 1), true
+		return emit(CLOSE_BRACKET, NA, 1), true
 	case c == '{':
-		return emit(OPEN_CURLY, 1), true
+		return emit(OPEN_CURLY, NA, 1), true
 	case c == '}':
-		return emit(CLOSE_CURLY, 1), true
+		return emit(CLOSE_CURLY, NA, 1), true
 	case c == '(':
-		return emit(OPEN_PAREN, 1), true
+		return emit(OPEN_PAREN, NA, 1), true
 	case c == ')':
-		return emit(CLOSE_PAREN, 1), true
+		return emit(CLOSE_PAREN, NA, 1), true
 	case c == ',':
-		return emit(COMMA, 1), true
+		return emit(COMMA, NA, 1), true
 	case c == ';':
-		return emit(SEMI_COLON, 1), true
+		return emit(SEMI_COLON, NA, 1), true
 
 	// ---- complete symbolic run -------------------------------------------
 	case operatorRunLength(src) > 0:
@@ -295,7 +297,7 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 // fallback is attempted.
 func (lex *lexer) scanSymbolicRun(src string) (scanned, bool) {
 	if DEBUG_TRACE {
-		defer lex.debugTraceEnd(lex.debugTraceBegin("scanSymbolicRun", SYMBOLIC_RUN, tracePreview(src)))
+		defer lex.debugTraceEnd(lex.debugTraceBegin("scanSymbolicRun", STAR, tracePreview(src)))
 	}
 	length := operatorRunLength(src)
 	if length == 0 {
@@ -307,10 +309,10 @@ func (lex *lexer) scanSymbolicRun(src string) (scanned, bool) {
 	}
 
 	if kind, ok := builtinSymbolKinds[run]; ok {
-		return emit(kind, length), true
+		return emit(kind, OPERATORS, length), true
 	}
 	if languagePredeclaredOperatorSpellings[run] {
-		return emit(CUSTOM_OPERATOR, length), true
+		return emit(BUILT_INS_FOL, CUSTOM_OPERATOR, length), true
 	}
 	if fixity, ok := lex.custom.match(run); ok {
 		before := explicitSymbolBoundaryBefore(lex.source, lex.pos)
@@ -318,10 +320,10 @@ func (lex *lexer) scanSymbolicRun(src string) (scanned, bool) {
 		if utf8.RuneCountInString(run) > 1 && !boundariesSatisfyFixity(fixity, before, after) {
 			return scanned{action: actionUnknown, length: length}, true
 		}
-		return emit(CUSTOM_OPERATOR, length), true
+		return emit(UDT, CUSTOM_OPERATOR, length), true
 	}
 	if len(run) >= 3 && strings.Trim(run, "*") == "" {
-		return emit(SYMBOLIC_RUN, length), true
+		return emit(STAR, NA, length), true
 	}
 	return scanned{action: actionUnknown, length: length}, true
 }
@@ -834,7 +836,7 @@ func (lex *lexer) emitNewline(_ string) {
 	lex.posi = start
 	lex.advanceN(1)
 	end := helpers.NewPosition(lex.pos, lex.line, lex.col, lex.pos, lex.fn, lex.currentLineText(), false)
-	lex.push(newUniqueToken(NEWLINE, "LSP", start.Copy(), end))
+	lex.push(newUniqueToken(NEWLINE, NA, "LSP", start.Copy(), end))
 	lex.posi = end
 	lex.advanceline(1)
 }
@@ -857,7 +859,7 @@ func (lex *lexer) emitToken(kind TokenKind, lexeme string) {
 	case IDENTIFIER:
 		lex.emitIdentifier(lexeme, start, end)
 	default:
-		lex.push(newUniqueToken(kind, lexeme, start.Copy(), end))
+		lex.push(newUniqueToken(kind, NA, lexeme, start.Copy(), end))
 	}
 	last := len(lex.Tokens) - 1
 	if last >= 0 {
@@ -881,11 +883,14 @@ func tracePreview(src string) string {
 // its KEYWORD or RESERVEDWORD kind instead of letting it pass as an IDENTIFIER.
 func (lex *lexer) emitIdentifier(lexeme string, start, end *helpers.Position) {
 	kind := IDENTIFIER
+	subKind := NA
 	if !isValidIdentifierLexeme(lexeme) {
 		kind = UNKNOWN
+
 	}
 	if k, ok := Reserved_lu[lexeme]; ok {
 		kind = k
+
 	}
-	lex.push(newUniqueToken(kind, lexeme, start.Copy(), end))
+	lex.push(newUniqueToken(kind, subKind, lexeme, start.Copy(), end))
 }

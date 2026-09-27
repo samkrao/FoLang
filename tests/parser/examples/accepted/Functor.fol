@@ -1,9 +1,0 @@
-@co.dap.typeclass(kind=Functor, shape=(F(_)), aliases=[
-    {name=MapperAB, type=(A)->(B)},
-    {name=InputContainer, type=F(A)},
-    {name=ResultContainer, type=F(B)}
-])
-_ co.lang.typeclass = {
-    // MapperAB is a typeclass-local alias declared by the built-in annotation.
-    map(value InputContainer, f MapperAB) -> (ResultContainer);
-}

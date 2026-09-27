@@ -1,3 +1,0 @@
-Employee co.lang.class = {
-    @@bogus()->(co.lang.int) = { this => 1; }
-}

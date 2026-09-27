@@ -1,2 +1,0 @@
-@co.ddap.import(library="runtime", component="native")
-value := 1;

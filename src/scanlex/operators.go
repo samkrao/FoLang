@@ -152,20 +152,20 @@ const asciiOperatorChars = "+-*/%<>=!&|^~?:.@#`\\"
 // spellings even though they are not expression operators.
 var builtinSymbolKinds = map[string]TokenKind{
 	"+": PLUS, "-": MINUS, "*": STAR, "/": SLASH, "%": PERCENT, "**": POW,
-	"+=": PLUS_EQUALS, "-=": MINUS_EQUALS, "*=": ASSIGNMENT, "/=": ASSIGNMENT,
-	"%=": ASSIGNMENT, "**=": ASSIGNMENT,
+	"+=": PLUS_EQUALS, "-=": MINUS_EQUALS, "*=": STAR_EQUALS, "/=": SLASH_EQUALS,
+	"%=": PERCENTILE_EQUALS, "**=": POW_EQUALS,
 	"=": ASSIGNMENT, "==": EQUALS, "!=": NOT_EQUALS, "!": NOT,
 	"<": LESS, ">": GREATER, "<=": LESS_EQUALS, ">=": GREATER_EQUALS,
-	"<:": LESS, ":>": GREATER,
 	"&&": AND, "||": OR, "&": AMPS, "|": PIPE,
-	"&=": ASSIGNMENT, "^=": ASSIGNMENT, "|=": ASSIGNMENT,
-	"^": POW, "~": TILD, "#": HASH, "@": AT, "@@": DOUBLE_AT,
-	".": DOT, "..": DOT_DOT, "...": DOT_DOT_DOT, "..<": DOT_DOT_LT,
+	"~": TILD, "#": HASH, "@": AT, "@@": DOUBLE_AT,
+	"^": CARET, ".": DOT, "..": DOT_DOT,
+	"...": DOT_DOT_DOT, "..<": DOT_DOT_LT,
 	"<..": LT_DOT_DOT, "<..<": LT_DOT_DOT_LT,
-	":": COLON, ":=": WALRUS, "::": LIFECYCLE_MARKER, "::=": COLON_WALRUS,
-	"->": ARROW, "->|": ARROW_PIPE, "->>": ARROW_GT, "<-": LEFT_ARROW, "<->": BIDIR_ARROW,
-	"=>": EQGT, "=>>": EQGTGT,
-	"?": QUESTION, "?=": QEQ, "$": CONTEXT_SIGIL_DOLLAR, "`": BACK_TICK, "\\": BACK_SLASH,
+	":": COLON, ":=": WALRUS, "::": DBL_COLON,
+	"::=": COLON_WALRUS, "->": ARROW, "->|": ARROW_PIPE,
+	"->>": ARROW_GT, "<-": LEFT_ARROW, "<->": BIDIR_ARROW,
+	"=>": EQGT, "=>>": EQGTGT, "?": QUESTION,
+	"?=": QEQ, "$": DOLLAR, "`": BACK_TICK, "\\": FORWARD_SLASH,
 }
 
 var builtinOperatorSpellings = func() map[string]bool {

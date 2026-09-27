@@ -1,5 +1,0 @@
-Pointer1 co.lang.type = co.lang.int->(*);
-Pointer2 co.lang.type = co.lang.int->(**);
-Pointer3 co.lang.type = co.lang.int->(***);
-Pointer4 co.lang.type = co.lang.int->(****);
-Pointer5 co.lang.type = co.lang.int->(*****);

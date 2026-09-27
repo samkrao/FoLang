@@ -1,7 +1,0 @@
-// A union body lists alternative members and holds no nested declaration either.
-_ co.lang.union = {
-    Inner co.lang.enum = {
-        Active,
-        Inactive
-    }
-}

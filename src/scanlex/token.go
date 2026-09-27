@@ -5,13 +5,13 @@ package scanlex
 import (
 	"fmt"
 
-	"github.com/samkrao/fo-lang/src/builtins"
 	"github.com/samkrao/fo-lang/src/helpers"
 )
 
 // Token represents a single lexical token with its kind, string value, and source positions.
 type Token struct {
-	Kind     builtins.TokenKind
+	Kind     TokenKind
+	SubKind  SubKind
 	Value    string
 	StartPos *helpers.Position
 	EndPos   *helpers.Position
@@ -32,7 +32,7 @@ func (tk Token) Println() {
 }
 
 // IsOneOfMany reports whether the token kind matches any of the given expected kinds.
-func (tk Token) IsOneOfMany(expectedTokens ...builtins.TokenKind) bool {
+func (tk Token) IsOneOfMany(expectedTokens ...TokenKind) bool {
 	for _, expected := range expectedTokens {
 		if expected == tk.Kind {
 			return true
@@ -44,26 +44,38 @@ func (tk Token) IsOneOfMany(expectedTokens ...builtins.TokenKind) bool {
 
 // DummyNode is a sentinel Token with INVALID kind used as a placeholder.
 var DummyNode Token = Token{
-	Kind: builtins.INVALID, Value: "Invalid", StartPos: helpers.NilPosition, EndPos: helpers.NilPosition,
+	Kind: UNKNOWN, SubKind: NA, Value: "Invalid", StartPos: helpers.NilPosition, EndPos: helpers.NilPosition,
 }
 
 // NewUniqueToken creates a new Token with the given kind, value, and position range.
-func NewUniqueToken(kind builtins.TokenKind, value string, startPos *helpers.Position, endPos *helpers.Position) Token {
-	return newUniqueToken(kind, value, startPos, endPos)
+func NewUniqueToken(kind TokenKind, subKind SubKind, value string, startPos *helpers.Position, endPos *helpers.Position) Token {
+	return newUniqueToken(kind, subKind, value, startPos, endPos)
 }
-func newUniqueToken(kind builtins.TokenKind, value string, startPos *helpers.Position, endPos *helpers.Position) Token {
+func newUniqueToken(kind TokenKind, subKind SubKind, value string, startPos *helpers.Position, endPos *helpers.Position) Token {
 	return Token{
-		Kind: kind, Value: value, StartPos: startPos, EndPos: endPos,
+		Kind: kind, SubKind: subKind, Value: value, StartPos: startPos, EndPos: endPos,
 	}
 }
 
 func newDummyToken(value string, startPos *helpers.Position, endPos *helpers.Position) Token {
 	return Token{
-		Kind: builtins.INVALID, Value: value, StartPos: startPos, EndPos: endPos,
+		Kind: UNKNOWN, SubKind: NA, Value: value, StartPos: startPos, EndPos: endPos,
 	}
 }
 
 // Debug prints the token value and kind to stdout for debugging.
 func (token Token) Debug() {
-	fmt.Printf("%s => (%s)\n", token.Value, builtins.TokenKindString(token.Kind))
+	fmt.Printf("%s => (%s)\n", token.Value, TokenKindString(token.Kind))
+}
+
+var Special_methods []string = []string{
+	"@@new",
+	"@@init",
+}
+
+// Reserved_lu maps reserved language keywords to their TokenKind.
+var Reserved_lu map[string]TokenKind = map[string]TokenKind{
+	"co":   KEYWORD, // holds everything
+	"this": KEYWORD, // refers this/self
+	"fΦλ":  KEYWORD, // fo-lang reserved word
 }

@@ -1,3 +1,0 @@
-Vector co.lang.unit = {
-    zero()->(Vector) = { }
-}

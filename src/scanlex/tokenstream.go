@@ -41,7 +41,7 @@ func newLexer(source []byte, fn string, custom *CustomOperators) *Lexer {
 	core.custom = custom
 	return &Lexer{
 		inner: core,
-		eof:   newUniqueToken(EOF, "EOF", helpers.NewPosition(1, 0, 1, 0, "", "", false), helpers.NewPosition(1, 0, 1, 0, "", "", false)),
+		eof:   newUniqueToken(EOF, NA, "EOF", helpers.NewPosition(1, 0, 1, 0, "", "", false), helpers.NewPosition(1, 0, 1, 0, "", "", false)),
 	}
 }
 
@@ -49,7 +49,7 @@ func newLexer(source []byte, fn string, custom *CustomOperators) *Lexer {
 // calls after the source is exhausted return the same EOF token.
 func (lexer *Lexer) nextToken() Token {
 	if lexer == nil || lexer.inner == nil {
-		return Token{Kind: EOF, Value: "EOF"}
+		return Token{Kind: EOF, SubKind: NA, Value: "EOF"}
 	}
 	if lexer.finished {
 		return lexer.eof
@@ -122,18 +122,12 @@ func (lexer *Lexer) emitUnknown(length, lines, endColumn int) Token {
 		core.col = endColumn
 	}
 	end := helpers.NewPosition(core.pos, core.line, core.col, core.pos, core.fn, core.currentLineText(), false)
-	token := newUniqueToken(UNKNOWN, lexeme, start.Copy(), end)
+	token := newUniqueToken(UNKNOWN, NA, lexeme, start.Copy(), end)
 	token.BoundaryBefore = boundaryBefore
 	token.BoundaryAfter = boundaryAfter
 	core.Tokens = []Token{token}
 	core.currentPos = 0
 	return token
-}
-
-// Diagnostics remains for source compatibility. Lexical problems are tokens,
-// so this always returns nil.
-func (lexer *Lexer) Diagnostics() []helpers.ErrorInterface {
-	return nil
 }
 
 // TokenStream provides parser-style lookahead over a Lexer. Before exposing a
@@ -151,7 +145,7 @@ type TokenStream struct {
 // NewTokenStream wraps lexer with a parser-facing folding buffer. The buffer is
 // populated on first use, so constructing a stream does not scan source.
 func NewTokenStream(lexer *Lexer) *TokenStream {
-	return &TokenStream{lexer: lexer, eof: Token{Kind: EOF, Value: "EOF"}}
+	return &TokenStream{lexer: lexer, eof: Token{Kind: EOF, SubKind: NA, Value: "EOF"}}
 }
 
 // Peek returns the token n positions ahead without consuming it. Peek(0) is
@@ -183,12 +177,6 @@ func (stream *TokenStream) Next() Token {
 	return token
 }
 
-// Diagnostics returns nil because lexical errors are returned as UNKNOWN
-// tokens instead of diagnostics.
-func (stream *TokenStream) Diagnostics() []helpers.ErrorInterface {
-	return nil
-}
-
 // prepare materializes and folds the lexical stream once. Folding dotted names
 // requires arbitrary forward context (for example, distinguishing a composite
 // identifier from a method call), so exposing raw tokens incrementally would
@@ -216,8 +204,8 @@ func (stream *TokenStream) prepare() {
 	core := stream.lexer.inner
 	core.Tokens = raw
 	core.currentPos = 0
-	cleanupLB(core)
-	foldTokens(core)
-	foldSpecialStatementBuiltins(core)
+	//cleanupLB(core)
+	//foldTokens(core)
+	//foldSpecialStatementBuiltins(core)
 	stream.buffer = append(stream.buffer, core.Tokens...)
 }

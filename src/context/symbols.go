@@ -15,6 +15,7 @@ type SymbolInfo interface {
 	SetOwnedContextID(ContextID)
 	GetSymbolTableID() SymbolTableID
 	Anchor() SymbolTableID
+	GetMappedName() SymbolName
 }
 
 type ResolutionState string
@@ -33,11 +34,16 @@ type SymbolDetails struct {
 	OwnedContextId   ContextID // context owned by this symbol, if any
 	SymbolType_      SymbolID
 	Name_            SymbolName
+	MappedName_      SymbolName
 	IsInternal_      bool
 	Type_            SymbolID
 	SymbolTableId    SymbolTableID   //symboltableID where this symbol is defined
 	ResolutionState_ ResolutionState // "resolved" | "unresolved" | "partially_resolved"
 
+}
+
+func (s SymbolDetails) GetMappedName() SymbolName {
+	return s.MappedName_
 }
 
 func (s SymbolDetails) GetSymbolTableID() SymbolTableID {

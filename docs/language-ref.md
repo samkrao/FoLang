@@ -4925,6 +4925,7 @@ Default Backend may provide information of Prototype Object link on reflection b
 | `co.native` | load, register, asm, inline, emit, ffi, spawnon[gpu,cpu,npu,apu,fpga,asic,tpu,mki,mcu],arch[x86,x86-64,risc,arm,vliw] |
 | `co.in` | read, readln |
 | `co.out` | println, print |
+|`co.sys.file`||
 | `co.regex` | pattern, match, search |
 | `co.crypto` | rsa, aes, hash, md5, rand, uuid, ssl, tls |
 | `co.dap` | built-in decorators and annotations, including backend-neutral standard runtime-operation implementation markers |
@@ -4941,9 +4942,15 @@ Default Backend may provide information of Prototype Object link on reflection b
 | `co.control` | continuation, CPS, full/delimited continuation control, shift/reset, prompt/control, and continuation-oriented control abstractions |
 | `co.cpca` | concurrent/parallel/async submission, task/thread execution facilities, future/callback completion, await, pools, channels, events, actors, process/distributed facilities, scheduling, fiber/coroutine facilities, defer, lazy, and related execution APIs |
 | `co.hokrlt`||
-| `co.operator`||
+| `co.operator`|"arity","fixity',"associativity"|
+|`co.operator.fixity`| "prefix", "infix", "postfix"|
+|`co.operator.arity`|"unary", "binary"|
+|`co.operator.associativity`|"left", "right", "none"|,
 |`co.hw`| cpu, memory|
 |`co.stex`||
+|`co.http`||
+|`co.udp`||
+|`co.tcp`||
 
 
 

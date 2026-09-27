@@ -1,3 +1,0 @@
-_ co.lang.unit = {
-    Option co.lang.newtype = co.lang.variants(Some(co.lang.int));
-}

@@ -1,6 +1,0 @@
-// A signature contains value specifications and function specifications.
-_ co.lang.signature = {
-    limit co.lang.int;
-
-    store(emp Employee)->(Employee);
-}

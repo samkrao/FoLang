@@ -1,3 +1,0 @@
-first := 1;
-@co.ddap.import(package="hr.employee", as="emp")
-second := emp.EmployeeService.find(1001);

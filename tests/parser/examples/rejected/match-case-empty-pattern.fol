@@ -1,1 +1,0 @@
-result := value.match.case().default("other");

@@ -1,3 +1,0 @@
-_ co.lang.extension->(target=somePkg.Employee) = {
-    describe()->() = { }
-}

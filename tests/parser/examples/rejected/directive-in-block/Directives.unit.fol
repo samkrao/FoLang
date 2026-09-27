@@ -1,5 +1,0 @@
-_ co.lang.unit = {
-    run()->() = {
-        @co.ddap.import(package="nested")
-    }
-}

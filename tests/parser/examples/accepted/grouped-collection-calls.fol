@@ -1,2 +1,0 @@
-(items.map)(|value| => value);
-(items.each)(_, value, {});
