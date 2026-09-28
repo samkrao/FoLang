@@ -2194,7 +2194,7 @@ name CallableType(parameterNames) = {
 Example with an ordinary function type:
 
 ```folang
-funType co.type = (x co.int)->(co.int);
+funType co.type = (co.int)->(co.int);
 x co.int = 10;
 SomeFun funType(x) = x * 10;
 ```
