@@ -332,6 +332,16 @@ func (s FunctionType) IsType() bool {
 	return true
 }
 
+// pathIdentity co.type =  (x co.int)->(x.type);
+
+type PathDependentType struct {
+	AbstractType
+}
+
+func (s PathDependentType) IsType() bool {
+	return true
+}
+
 // someDelegate co.delegate = (a co.int, b co.int)->(co.int, co.int);
 type DelegateType struct {
 	AbstractType
@@ -1000,10 +1010,11 @@ type IIdentifier interface {
 // someVariable
 type Variable struct {
 	SymbolDetails
-	IsAdhoc       bool
-	IsInternalVar bool
-	IsDiscard     bool
-	IsBindVar     bool
+	IsAdhoc         bool
+	IsInternalVar   bool
+	IsDiscard       bool
+	IsBindVar       bool
+	IsPathDependent bool // x somevar.type; kinds
 }
 
 func (a Variable) IdentifierType() string {

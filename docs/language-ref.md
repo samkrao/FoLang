@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="F.png" width="200" alt="Foλang Logo"/>
+  <img src="F.png" width="200" alt="FΦλang Logo"/>
 </p>
 
 
 <a id="FoLang"></a>
-[Foλang](https://github.com/samkrao/folang) is a general-purpose programming language designed to be **expressive, consistent, and extensible**, merging functional fluency with object-centric abstractions.
+[FΦλang (FoLang)](https://github.com/samkrao/folang) is a general-purpose programming language designed to be **expressive, consistent, and extensible**, merging functional fluency with object-centric abstractions.
 
 
 
@@ -1132,11 +1132,18 @@ n co.int = 20;
 
 p := identity(m);
 q := identity(n);
+r n.type = identity(n);
 
 type of p = m.type
 type of q = n.type
 
+
 m.type != n.type
+q.type != r.type
+
+co.hokrlt.type.DeclaredType(q) ==  co.hokrlt.type.DeclaredType(r);  //they are n.type
+co.hokrlt.type.DeclaredType(p) !=  co.hokrlt.type.DeclaredType(q);  // they are m.type and n.type
+
 ```
 ##### Compile time type evaluation
  someIntVar co.int ;
