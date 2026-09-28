@@ -1122,9 +1122,25 @@ A refinement type restricts which **values** of a base type are valid. A depende
 Path-dependent result types may refer to a value/type path when the applicable syntax and type-resolution rules in this reference permit it:
 
 ```folang
-identity(x co.int)->(x.type) =  x;
-```
+PathIdentity co.type =
+    (x co.int)->(x.type);
 
+identity PathIdentity(x) = x;
+
+m co.int = 10;
+n co.int = 20;
+
+p := identity(m);
+q := identity(n);
+
+type of p = m.type
+type of q = n.type
+
+m.type != n.type
+```
+##### Compile time type evaluation
+ someIntVar co.int ;
+ someVar co.hokrlt.type.decltype(someIntVar) = 200;
 #### Predicate Types
 
 ```folang
@@ -2178,10 +2194,9 @@ name CallableType(parameterNames) = {
 Example with an ordinary function type:
 
 ```folang
-PathIdentity co.type =
-    (x co.int)->(x.type);
-
-identity PathIdentity(x) = x;
+funType co.type = (x co.int)->(co.int);
+x co.int = 10;
+SomeFun funType(x) = x * 10;
 ```
 > name CallableType(parameterNames) = expression;
 
