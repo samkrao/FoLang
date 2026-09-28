@@ -5115,6 +5115,11 @@ SymbolTable {
     ContextId:       string,   // owning named-definition/structural Context
     Prefix:          string,
 
+    // ContextLike is false by default only on certain paths we enable when enabled
+	// like new context we can redeclare same variables with different/same types
+	// still it is Symboltable still some of its behavior derived from context
+	ContextLike   bool,
+
     SymbolIds:       [ <symbol-id> ],
     SymbolsByName:   { <declaration-key>: [ <symbol-id> ] }
 }
@@ -5153,7 +5158,7 @@ Common symbol data:
 ```text
 SymbolDetails {
     SymbolId_        string
-    OwnedContextId   context
+    OwnedContextId   string 
     SymbolType_      string
     Name_            string
     IsInternal_      bool

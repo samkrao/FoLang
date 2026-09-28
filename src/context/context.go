@@ -229,7 +229,12 @@ type SymbolTable struct {
 	Prefix    string
 	// SymbolIds preserves declaration order. SymbolsByName indexes declaration
 	// keys (including overload signatures) into the canonical SymbolsById map.
-	SymbolIds     []SymbolID
+
+	SymbolIds []SymbolID
+	// ContextLike is false by default only on certain paths we enable when enabled
+	// like new context we can redeclare same variables with different/same types
+	// still it is Symboltable still some of its behavior derived from context
+	ContextLike   bool
 	SymbolsByName map[SymbolName][]SymbolID
 }
 
