@@ -1122,7 +1122,7 @@ A refinement type restricts which **values** of a base type are valid. A depende
 Path-dependent result types may refer to a value/type path when the applicable syntax and type-resolution rules in this reference permit it:
 
 ```folang
-identity(x co.int)->(x.type) = x;
+identity(x co.int)->(x.type) =  x;
 ```
 
 #### Predicate Types
@@ -1170,6 +1170,8 @@ Option(T) co.type =
 `T` is a **type parameter** of the type family.
 
 `Some(T)` is a parameterized state whose payload type depends on `T`; `None` is a zero-payload state. Concrete applications such as `Option(co.int)` are ordinary type applications.
+
+> **Terminology note:** FoLang calls this a **parameterized type**. In type-theory literature, the same `Type -> Type` behavior is often described as a *type constructor*. FoLang does not introduce a separate constructor declaration category for it.
 
 #### Associated Types
 
@@ -1369,6 +1371,84 @@ Struct bodies do not define ordinary instance methods. Struct-associated behavio
 Structs do not participate in class inheritance or the class OOP relationship model.
 
 Structs support composition/embedding according to the struct rules.
+
+
+#### Struct Embedding
+
+Embedding promotes fields of an embedded struct directly into the outer struct — they act as the outer struct's own fields at construction and access sites. This is distinct from composition where the embedded struct is a named field.
+
+```folang
+// E.fol
+_ co.struct = {
+    id   co.int;
+    name co.string;
+}
+
+// ✅ No conflict — id and name promoted as B's own fields
+// B.fol
+_ co.struct = {
+    age co.float;
+    E;                    // embedded — id and name promoted
+}
+
+b := B{ age: 25.0, id: 1, name: "Rao" };   // all fields at same level
+b.id    // direct — no b.E.id needed
+b.name  // direct — no b.E.name needed
+b.age   // direct
+```
+
+```folang
+// ❌ Compiler error — name conflict between B.name and E.name
+// B.fol
+_ co.struct = {
+    name co.string;   // conflicts with E.name
+    E;
+    age  co.float;
+}
+// Fix 1 — rename B's conflicting field
+// Fix 2 — use explicit composition instead: e E;
+```
+
+```folang
+// Explicit composition — no promotion, always qualified access
+// B.fol
+_ co.struct = {
+    name co.string;
+    e    E;               // named field — no conflict, no promotion
+    age  co.float;
+}
+
+b.name ;   // B's own name
+b.e.id ;   // E's id — always explicit
+b.e.name;  // E's name — always explicit
+```
+
+#### Embedding Rules
+
+| Situation | Behavior |
+|---|---|
+| Embedded field, no conflict | Promoted — acts as the outer struct's own field |
+| Embedded field, name conflict with outer | ❌ Compiler error — rename or use composition |
+| Multiple embeds, no conflict between them | All fields promoted |
+| Multiple embeds, conflict between embedded structs | ❌ Compiler error |
+| Explicit composition (`e E`) | No promotion — always accessed via `b.e.field` |
+
+> FoLang does **not** silently shadow conflicting fields. Any such name conflict is a compile-time error; the conflicting declaration must be renamed or the relationship expressed through an allowed explicit-composition mechanism.
+
+For member-style embedding, an accessible public instance-associated function
+with an explicit value receiver follows the same promotion and conflict rules
+as a field. Receiverless companion functions, type-associated functions,
+operator functions, and companion-associated type declarations remain in their
+defined companion or operator lookup domains and are not promoted as instance
+members merely because their owner struct is embedded.
+
+Embedding never widens member access. A promoted field or
+instance-associated function retains its original declaration owner, symbol
+identity, and access classifier. A private member remains accessible only
+inside the embedded struct's ownership boundary, including that struct's
+companion unit; it is not made accessible to the embedding struct. Conflict
+checking considers the accessible members eligible for promotion and reports a
+compiler error when no unique promoted member can be selected.
 
 
 
@@ -2098,9 +2178,10 @@ name CallableType(parameterNames) = {
 Example with an ordinary function type:
 
 ```folang
-IntBinary co.type = (co.int, co.int)->(co.int);
+PathIdentity co.type =
+    (x co.int)->(x.type);
 
-add IntBinary(a, b) = a + b;
+identity PathIdentity(x) = x;
 ```
 > name CallableType(parameterNames) = expression;
 
@@ -3302,6 +3383,24 @@ _ co.struct = {
     prev  LinkedList;
 }
 ```
+
+A generic struct can be used to achieve type-level-function behavior. Because a struct is a pure data declaration without methods, inheritance, or other object-oriented behavior, its generic application can be modelled as a mapping from type arguments to a specialized pure-data type:
+
+```text
+Pair : (Type, Type) -> Type
+Pair(co.int, co.string) -> specialized Pair type
+```
+
+This is a semantic model, not a separate FoLang declaration category. `Pair` remains 
+an ordinary `@co.dap.generic` struct, and its concrete application must
+be named through `co.type` before use:
+
+```folang
+IntStringPair co.type = Pair(co.int, co.string);
+```
+
+Generic structs are therefore not pure type-level functions: they introduce ordinary struct types and participate in the normal struct type system. They merely provide the same useful type-to-type mapping behavior during generic specialization.
+
 
 ```folang
 // linked_list_values.unit.fol
