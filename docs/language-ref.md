@@ -5095,7 +5095,6 @@ Context {
     Prefix:                  string,
     ContextType_:            string,
     SymbolTables_:           [string], // lexical tables owned by this Context; at least the root table
-    ChildCtxIds:             [string], // direct child named-definition Context IDs
     ResolutionPolicy:        string,
     OwnerSymbolId:           string    // named definition owning this Context; empty for structural roots
 }

@@ -1,6 +1,8 @@
 package symboltable
 
-import "reflect"
+import (
+	"reflect"
+)
 
 type SymbolsToString string
 
@@ -968,6 +970,7 @@ type FunctionSymbol struct {
 	OverLoadable bool
 	Overridable  bool
 	IsAnonymous  bool
+	IsMethod     bool
 	Scope        FunctionScope //lexical, dynamic, mixed
 
 }
@@ -1349,51 +1352,34 @@ func (a Return) IdentifierType() string {
 	return "Return"
 }
 
-// co.struct
-type KindIdentifier struct {
-	SymbolDetails
-}
+type MetadataKind string
 
-func (s KindIdentifier) SymbolTypeKind() string {
-	return string(reflect.TypeOf(s).Name())
-}
-func (a KindIdentifier) IdentifierType() string {
-	return "KindIdentifier"
-}
+const (
+	Directive  MetadataKind = "Directive"
+	Pragma     MetadataKind = "Pragma"
+	Annotation MetadataKind = "Annotation"
+	Decorator  MetadataKind = "Decorator"
+)
 
-// co.int
-type TypeIdentifier struct {
-	SymbolDetails
-}
-
-func (s TypeIdentifier) SymbolTypeKind() string {
-	return string(reflect.TypeOf(s).Name())
-}
-func (a TypeIdentifier) IdentifierType() string {
-	return "TypeIdentifier"
-}
-
-type BackendBinding struct {
-	ImplementationKind string
-	RuntimeOperationID string
-	ExternalName       string
-	CallingConvention  string
-	Linkage            string
+type MetaDataValue struct {
+	Key         string
+	Value       any // later this can become a narrower metadata-value interface
+	SourceIndex int
 }
 
 // @co.
-type PDADSymbol struct {
+type MetaDataApplication struct {
 	SymbolDetails
-	BackendBinding
-	IsFFIABI bool
-	Kind_    string // annotation. pragma, directive, decorator
+	Kind_        MetadataKind
+	DefinitionId SymbolID
+	Attributes   []MetaDataValue
 }
 
-func (s PDADSymbol) SymbolTypeKind() string {
+func (s MetaDataApplication) SymbolTypeKind() string {
 	return string(reflect.TypeOf(s).Name())
 }
-func (a PDADSymbol) Kind() string {
-	return a.Kind_
+func (a MetaDataApplication) Kind() string {
+	return string(a.Kind_)
 }
 
 type OperatorFixity string
@@ -1666,7 +1652,7 @@ var _ SymbolInfo = (*Return)(nil)
 var _ SymbolInfo = (*KindIdentifier)(nil)
 var _ SymbolInfo = (*TypeIdentifier)(nil)
 
-var _ SymbolInfo = (*PDADSymbol)(nil)
+var _ SymbolInfo = (*MetaDataApplication)(nil)
 
 var _ SymbolInfo = (*OperatorSymbol)(nil)
 var _ SymbolInfo = (*BuiltInProtoTypalProp)(nil)

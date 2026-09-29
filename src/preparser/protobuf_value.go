@@ -474,7 +474,7 @@ var portableConcreteTypes = registerPortableTypes(
 	&symboltable.LifecycleSymbol{}, &symboltable.AssociatedFunction{},
 	&symboltable.FunctionObject{}, &symboltable.Callable{}, &symboltable.Variable{},
 	&symboltable.Parameter{}, &symboltable.Return{}, &symboltable.KindIdentifier{},
-	&symboltable.TypeIdentifier{}, &symboltable.PDADSymbol{},
+	&symboltable.TypeIdentifier{}, &symboltable.MetaDataApplication{},
 	&symboltable.OperatorSymbol{},
 	&symboltable.BuiltInProtoTypalProp{}, &symboltable.Literal{},
 	&symboltable.ThisProperties{}, &symboltable.CoProperties{},

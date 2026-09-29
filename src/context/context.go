@@ -247,7 +247,6 @@ type Context struct {
 	Prefix                 string
 	ContextType_           SymbolsToString
 	SymbolTables_          []SymbolTableID // symbol table id
-	ChildCtxIds            []ContextID     //holds child context ids
 	ResolutionPolicy       ResolutionPolicy
 	/*
 		     *  lexical_ordered,
