@@ -437,7 +437,7 @@ var portableConcreteTypes = registerPortableTypes(
 	ast.UnaryExpr{}, ast.BinaryExpr{}, ast.AssignmentExpr{}, ast.CompoundAssignmentExpr{},
 	ast.TupleExpr{}, ast.ConstructionElement{}, ast.ConstructionExpr{}, ast.MatchCase{}, ast.MatchExpr{},
 	ast.AnonymousFunctionExpr{}, ast.LambdaExpr{}, ast.AnonymousClassExpr{},
-	ast.LetBinding{}, ast.LetExpr{}, ast.ComprehensionExpr{}, ast.WildcardArgument{},
+	ast.ComprehensionExpr{}, ast.WildcardArgument{},
 	ast.SelectionBranch{}, ast.SelectionExpr{},
 	ast.EmptyStatement{}, ast.ExpressionStatement{}, ast.MultipleAssignmentStatement{},
 	ast.ReturnStatement{}, ast.EnclosingCallableReturnStatement{}, ast.LoopStatement{},
