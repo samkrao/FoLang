@@ -1649,8 +1649,6 @@ var _ SymbolInfo = (*AssociatedFunction)(nil)
 var _ SymbolInfo = (*Variable)(nil)
 var _ SymbolInfo = (*Parameter)(nil)
 var _ SymbolInfo = (*Return)(nil)
-var _ SymbolInfo = (*KindIdentifier)(nil)
-var _ SymbolInfo = (*TypeIdentifier)(nil)
 
 var _ SymbolInfo = (*MetaDataApplication)(nil)
 
