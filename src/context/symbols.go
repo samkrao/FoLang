@@ -1,5 +1,7 @@
 package symboltable
 
+import "reflect"
+
 type SymbolsToString string
 
 func (s SymbolDetails) Anchor() SymbolTableID { return s.SymbolTableId }
@@ -16,6 +18,7 @@ type SymbolInfo interface {
 	GetSymbolTableID() SymbolTableID
 	Anchor() SymbolTableID
 	GetMappedName() SymbolName
+	SymbolTypeKind() string
 }
 
 type ResolutionState string
@@ -42,6 +45,9 @@ type SymbolDetails struct {
 
 }
 
+func (s SymbolDetails) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s SymbolDetails) GetMappedName() SymbolName {
 	return s.MappedName_
 }
@@ -86,6 +92,10 @@ type ProgramSymbol struct {
 	DynamicDispatch bool
 }
 
+func (s ProgramSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+
 func (s ProgramSymbol) Kind() string {
 	return s.Kind_
 }
@@ -96,6 +106,10 @@ func (s ProgramSymbol) LibKind() string {
 
 type ApplicationSymbol struct {
 	SymbolDetails
+}
+
+func (s ApplicationSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 type ITypeSymbol interface {
@@ -122,7 +136,7 @@ const (
 	Any           BDTKind = "co.any"
 	Byte          BDTKind = "co.byte"
 	Number        BDTKind = "co.number"
-	Error         BDTKind = "co.erro"
+	Error         BDTKind = "co.error"
 	AbstractError BDTKind = "co.AbstractError"
 	Value         BDTKind = "co.value"
 	Untyped       BDTKind = "co.untyped"
@@ -140,6 +154,9 @@ type BDTtype struct {
 func (s BDTtype) IsType() bool {
 	return true
 }
+func (s BDTtype) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 
 func (s BDTtype) Kind() string {
 	return string(s.Kind_)
@@ -149,6 +166,10 @@ type UDTtype struct {
 	AbstractType
 	Isinferred  bool
 	IsRedeclare bool
+}
+
+func (s UDTtype) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s UDTtype) IsType() bool {
@@ -178,6 +199,10 @@ type PredefinedCollections struct {
 	Kind_ PredefinedObjects
 }
 
+func (s PredefinedCollections) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+
 func (s PredefinedCollections) IsType() bool {
 	return true
 }
@@ -191,6 +216,10 @@ type AliasType struct {
 	AbstractType
 }
 
+func (s AliasType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+
 func (s AliasType) IsType() bool {
 	return true
 }
@@ -198,6 +227,10 @@ func (s AliasType) IsType() bool {
 // x co.newtype =  co.int;
 type NewType struct {
 	AbstractType
+}
+
+func (s NewType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s NewType) IsType() bool {
@@ -209,6 +242,10 @@ type SuperType struct {
 	AbstractType
 }
 
+func (s SuperType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+
 func (s SuperType) IsType() bool {
 	return true
 }
@@ -216,6 +253,10 @@ func (s SuperType) IsType() bool {
 // x co.subtype =  somepackage.Employee
 type SubType struct {
 	AbstractType
+}
+
+func (s SubType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s SubType) IsType() bool {
@@ -227,6 +268,10 @@ type OpaqueType struct {
 	AbstractType
 }
 
+func (s OpaqueType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+
 func (s OpaqueType) IsType() bool {
 	return true
 }
@@ -236,6 +281,10 @@ type ADTtype struct {
 	AbstractType
 }
 
+func (s ADTtype) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+
 func (s ADTtype) IsType() bool {
 	return true
 }
@@ -243,6 +292,10 @@ func (s ADTtype) IsType() bool {
 // someType co.predicateType = (co.type).where( candidate => candidate == co.int || candidate == co.string );
 type PredicateType struct {
 	AbstractType
+}
+
+func (s PredicateType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s PredicateType) IsType() bool {
@@ -255,6 +308,10 @@ type AssociatedType struct {
 	AbstractType
 }
 
+func (s AssociatedType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+
 func (s AssociatedType) IsType() bool {
 	return true
 }
@@ -262,6 +319,10 @@ func (s AssociatedType) IsType() bool {
 // Vector(n) co.type = co.dependentType( co.int->([n]) );
 type DependentType struct {
 	AbstractType
+}
+
+func (s DependentType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s DependentType) IsType() bool {
@@ -273,6 +334,10 @@ type RefinementType struct {
 	AbstractType
 }
 
+func (s RefinementType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+
 func (s RefinementType) IsType() bool {
 	return true
 }
@@ -280,6 +345,10 @@ func (s RefinementType) IsType() bool {
 // x co.type = co.generic(T)
 type GenericType struct {
 	AbstractType
+}
+
+func (s GenericType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s GenericType) IsType() bool {
@@ -291,6 +360,10 @@ type Hokrltype struct {
 	AbstractType
 }
 
+func (s Hokrltype) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+
 func (s Hokrltype) IsType() bool {
 	return true
 }
@@ -298,6 +371,10 @@ func (s Hokrltype) IsType() bool {
 // co.shape
 type ShapeType struct {
 	AbstractType
+}
+
+func (s ShapeType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s ShapeType) IsType() bool {
@@ -309,6 +386,10 @@ type UninitType struct {
 	AbstractType
 }
 
+func (s UninitType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+
 func (s UninitType) IsType() bool {
 	return true
 }
@@ -316,6 +397,10 @@ func (s UninitType) IsType() bool {
 // blockormacro co.kind = block | macro
 type KindType struct {
 	AbstractType
+}
+
+func (s KindType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s KindType) IsType() bool {
@@ -328,6 +413,10 @@ type FunctionType struct {
 	AbstractType
 }
 
+func (s FunctionType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+
 func (s FunctionType) IsType() bool {
 	return true
 }
@@ -336,6 +425,10 @@ func (s FunctionType) IsType() bool {
 
 type PathDependentType struct {
 	AbstractType
+}
+
+func (s PathDependentType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s PathDependentType) IsType() bool {
@@ -347,6 +440,10 @@ type DelegateType struct {
 	AbstractType
 }
 
+func (s DelegateType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+
 func (s DelegateType) IsType() bool {
 	return true
 }
@@ -354,6 +451,10 @@ func (s DelegateType) IsType() bool {
 // Option(T) co.type =  co.variants(Some(T), None);
 type ParameterizedType struct {
 	AbstractType
+}
+
+func (s ParameterizedType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s ParameterizedType) IsType() bool {
@@ -365,6 +466,10 @@ type DataType struct {
 	AbstractType
 }
 
+func (s DataType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+
 func (s DataType) IsType() bool {
 	return true
 }
@@ -372,6 +477,10 @@ func (s DataType) IsType() bool {
 // x(T,n) co.type= co.tag(T,n);
 type TagType struct {
 	AbstractType
+}
+
+func (s TagType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s TagType) IsType() bool {
@@ -384,6 +493,9 @@ type PolymorphicType struct {
 	AbstractType
 }
 
+func (s PolymorphicType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s PolymorphicType) IsType() bool {
 	return true
 }
@@ -394,6 +506,9 @@ type Impredicativetypes struct {
 	AbstractType
 }
 
+func (s Impredicativetypes) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s Impredicativetypes) IsType() bool {
 	return true
 }
@@ -416,6 +531,9 @@ type ArrayType struct {
 	AbstractType
 }
 
+func (s ArrayType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s ArrayType) IsType() bool {
 	return true
 }
@@ -430,6 +548,9 @@ type PointerType struct {
 	AbstractType
 }
 
+func (s PointerType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s PointerType) IsType() bool {
 	return true
 }
@@ -446,6 +567,9 @@ type ReferenceType struct {
 	AbstractType
 }
 
+func (s ReferenceType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s ReferenceType) IsType() bool {
 	return true
 }
@@ -455,15 +579,18 @@ func (s ReferenceType) IsDerived() bool {
 }
 
 // x co.type = co.int(@);
-type AdressType struct {
+type AddressType struct {
 	AbstractType
 }
 
-func (s AdressType) IsType() bool {
+func (s AddressType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+func (s AddressType) IsType() bool {
 	return true
 }
 
-func (s AdressType) IsDerived() bool {
+func (s AddressType) IsDerived() bool {
 	return true
 }
 
@@ -472,6 +599,9 @@ type WordType struct {
 	AbstractType
 }
 
+func (s WordType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s WordType) IsType() bool {
 	return true
 }
@@ -485,6 +615,9 @@ type RangeType struct {
 	AbstractType
 }
 
+func (s RangeType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s RangeType) IsType() bool {
 	return true
 }
@@ -498,6 +631,9 @@ type ThunkType struct {
 	AbstractType
 }
 
+func (s ThunkType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s ThunkType) IsType() bool {
 	return true
 }
@@ -511,6 +647,9 @@ type SliceType struct {
 	AbstractType
 }
 
+func (s SliceType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s SliceType) IsType() bool {
 	return true
 }
@@ -525,6 +664,9 @@ type GenericSpecializationType struct {
 	IsSpecialize bool
 }
 
+func (s GenericSpecializationType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s GenericSpecializationType) IsType() bool {
 	return true
 }
@@ -553,6 +695,9 @@ type StructSymbol struct {
 func (s KindSymbol) Kind() string {
 	return "struct"
 }
+func (s StructSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 
 // _ co.cstruct = {}
 type CStructSymbol struct {
@@ -561,6 +706,10 @@ type CStructSymbol struct {
 
 func (s CStructSymbol) Kind() string {
 	return "cstruct"
+}
+
+func (s CStructSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 // _ co.enum= {}
@@ -574,9 +723,17 @@ func (s EnumSymbol) Kind() string {
 	return "enum"
 }
 
+func (s EnumSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+
 // _ co.module={}
 type ModuleSymbol struct {
 	KindSymbol
+}
+
+func (s ModuleSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s ModuleSymbol) Kind() string {
@@ -588,6 +745,9 @@ type SignatureSymbol struct {
 	KindSymbol
 }
 
+func (s SignatureSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s SignatureSymbol) Kind() string {
 	return "signature"
 }
@@ -601,12 +761,19 @@ func (s InterfaceSymbol) Kind() string {
 	return "interface"
 }
 
+func (s InterfaceSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+
 // _ co.class = {}
 type ClassSymbol struct {
 	KindSymbol
-	Anonnymous bool
+	Anonymous bool
 }
 
+func (s ClassSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s ClassSymbol) Kind() string {
 	return "class"
 }
@@ -616,6 +783,9 @@ type TypeClassSymbol struct {
 	KindSymbol
 }
 
+func (s TypeClassSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s TypeClassSymbol) Kind() string {
 	return "typeclass"
 }
@@ -625,6 +795,9 @@ type InstanceSymbol struct {
 	KindSymbol
 }
 
+func (s InstanceSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s InstanceSymbol) Kind() string {
 	return "instance"
 }
@@ -634,6 +807,9 @@ type TraitSymbol struct {
 	KindSymbol
 }
 
+func (s TraitSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s TraitSymbol) Kind() string {
 	return "trait"
 }
@@ -643,6 +819,9 @@ type MixinSymbol struct {
 	KindSymbol
 }
 
+func (s MixinSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s MixinSymbol) Kind() string {
 	return "mixin"
 }
@@ -653,6 +832,9 @@ type ComponentSymbol struct {
 	Kind_ string // application, native, dynamicvmrt, packaged, operators
 }
 
+func (s ComponentSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s ComponentSymbol) Kind() string {
 	return "component"
 }
@@ -662,6 +844,9 @@ type UnitSymbol struct {
 	KindSymbol
 }
 
+func (s UnitSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s UnitSymbol) Kind() string {
 	return "package"
 }
@@ -669,6 +854,10 @@ func (s UnitSymbol) Kind() string {
 // _ co.extension={}
 type ExtensionSymbol struct {
 	KindSymbol
+}
+
+func (s ExtensionSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s ExtensionSymbol) Kind() string {
@@ -680,6 +869,9 @@ type ObjectSymbol struct {
 	KindSymbol
 }
 
+func (s ObjectSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s ObjectSymbol) Kind() string {
 	return "object"
 }
@@ -688,6 +880,10 @@ func (s ObjectSymbol) Kind() string {
 // _ co.object-={}
 type AnnotationSymbol struct {
 	ObjectSymbol
+}
+
+func (s AnnotationSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s AnnotationSymbol) Kind() string {
@@ -699,6 +895,9 @@ type MatcherSymbol struct {
 	KindSymbol
 }
 
+func (s MatcherSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s MatcherSymbol) Kind() string {
 	return "matcher"
 }
@@ -708,6 +907,9 @@ type UnionSymbol struct {
 	KindSymbol
 }
 
+func (s UnionSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s UnionSymbol) Kind() string {
 	return "union"
 }
@@ -718,6 +920,9 @@ type BlockSymbol struct {
 	IsAnonymous bool
 }
 
+func (s BlockSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s BlockSymbol) Kind() string {
 	return "block"
 }
@@ -725,6 +930,10 @@ func (s BlockSymbol) Kind() string {
 // _ co.symbol={}
 type SymbolSymbol struct {
 	KindSymbol
+}
+
+func (s SymbolSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s SymbolSymbol) Kind() string {
@@ -744,17 +953,25 @@ const (
 	Mixed   FunctionScope = "mixed"
 )
 
+type AbstractFunctionShape struct {
+	SymbolDetails
+}
+
 // x ()->()={}
 type FunctionSymbol struct {
-	SymbolDetails
+	AbstractFunctionShape
 	IsClosure    bool
 	Inner        bool
 	OverLoadable bool
 	Overridable  bool
 	IsAnonymous  bool
 	Scope        FunctionScope //lexical, dynamic, mixed
+
 }
 
+func (s FunctionSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s FunctionSymbol) FunctionShape() string {
 	return "function"
 }
@@ -766,7 +983,11 @@ func (s FunctionSymbol) FunctionShape() string {
 // folang doesn't support x:= (a co.int, b co.int)->(co.int) ==> a + b;
 
 type ExpressionBodiedFunction struct {
-	SymbolDetails
+	AbstractFunctionShape
+}
+
+func (s ExpressionBodiedFunction) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (a ExpressionBodiedFunction) Kind() string {
@@ -780,7 +1001,11 @@ func (s ExpressionBodiedFunction) FunctionShape() string {
 // @co.dap.decorator
 // myDecorator(target co.function)->(co.function) = { }
 type DecoratorSymbol struct {
-	SymbolDetails
+	AbstractFunctionShape
+}
+
+func (s DecoratorSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s DecoratorSymbol) FunctionShape() string {
@@ -789,20 +1014,27 @@ func (s DecoratorSymbol) FunctionShape() string {
 
 // @co.dap.extension(fortype=co.string, what=extends)
 // upperCase()->(co.string) = { this => this.upper(); }
-type ExensionMethodSymbol struct {
-	SymbolDetails
+type ExtensionMethodSymbol struct {
+	AbstractFunctionShape
 }
 
-func (s ExensionMethodSymbol) FunctionShape() string {
+func (s ExtensionMethodSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+
+func (s ExtensionMethodSymbol) FunctionShape() string {
 	return "extension_method"
 }
 
 // @co.dap.native
 // x ()->()={}
 type NativeFunctionSymbol struct {
-	SymbolDetails
+	AbstractFunctionShape
 }
 
+func (s NativeFunctionSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s NativeFunctionSymbol) FunctionShape() string {
 	return "native_function"
 }
@@ -810,7 +1042,11 @@ func (s NativeFunctionSymbol) FunctionShape() string {
 // @co.dap.macro()
 // if(condition expr, body block)->()={}
 type MacroSymbol struct {
-	SymbolDetails
+	AbstractFunctionShape
+}
+
+func (s MacroSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s MacroSymbol) FunctionShape() string {
@@ -822,9 +1058,12 @@ func (s MacroSymbol) FunctionShape() string {
 // x ()->(untyped)={}
 
 type TemplateSymbol struct {
-	SymbolDetails
+	AbstractFunctionShape
 }
 
+func (s TemplateSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s TemplateSymbol) FunctionShape() string {
 	return "template"
 }
@@ -832,7 +1071,11 @@ func (s TemplateSymbol) FunctionShape() string {
 // @co.dap.executionmodel()
 // fu ()->()={}
 type ExecutionModelSymbol struct {
-	SymbolDetails
+	AbstractFunctionShape
+}
+
+func (s ExecutionModelSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s ExecutionModelSymbol) FunctionShape() string {
@@ -841,9 +1084,12 @@ func (s ExecutionModelSymbol) FunctionShape() string {
 
 // f (..)(..)->()={}
 type CurryingFunctionSymbol struct {
-	FunctionSymbol
+	AbstractFunctionShape
 }
 
+func (s CurryingFunctionSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s CurryingFunctionSymbol) FunctionShape() string {
 	return "currying_function"
 }
@@ -851,9 +1097,12 @@ func (s CurryingFunctionSymbol) FunctionShape() string {
 // @co.dap.defer
 // ff()->()={}();
 type DeferredFunctionSymbol struct {
-	FunctionSymbol
+	AbstractFunctionShape
 }
 
+func (s DeferredFunctionSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s DeferredFunctionSymbol) FunctionShape() string {
 	return "deferred_function"
 }
@@ -862,34 +1111,47 @@ func (s DeferredFunctionSymbol) FunctionShape() string {
 // k :=  someFun.bind(10, 20);
 // res := k.invoke()
 type BindCallableSymbol struct {
-	FunctionSymbol
+	AbstractFunctionShape
 }
 
+func (s BindCallableSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s BindCallableSymbol) FunctionShape() string {
 	return "BindCallable_Signature"
 }
 
 // ff( x ..co.int)->()={}
 type VariadicFunctionSymbol struct {
-	FunctionSymbol
+	AbstractFunctionShape
 }
 
+func (s VariadicFunctionSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s VariadicFunctionSymbol) FunctionShape() string {
 	return "variadic_function"
 }
 
 // fun1(~k co.int, ~v co.int)->()={}
 type NamedParameterFunctionSymbol struct {
-	FunctionSymbol
+	AbstractFunctionShape
 }
 
+func (s NamedParameterFunctionSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s NamedParameterFunctionSymbol) FunctionShape() string {
 	return "named_parameter_function"
 }
 
 // fun1(k? co.int)->()={}
 type OptionalParameterFunctionSymbol struct {
-	FunctionSymbol
+	AbstractFunctionShape
+}
+
+func (s OptionalParameterFunctionSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s OptionalParameterFunctionSymbol) FunctionShape() string {
@@ -898,7 +1160,11 @@ func (s OptionalParameterFunctionSymbol) FunctionShape() string {
 
 // fun1(k co.int, b co.char = 'A')->(co.int, co.char)={ }
 type DefaultParameterFunctionSymbol struct {
-	FunctionSymbol
+	AbstractFunctionShape
+}
+
+func (s DefaultParameterFunctionSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s DefaultParameterFunctionSymbol) FunctionShape() string {
@@ -908,9 +1174,12 @@ func (s DefaultParameterFunctionSymbol) FunctionShape() string {
 // @co.dap.indexer(symbol="[]")
 // (g MyList) get(index co.int)->(co.int) ={ this => g.eles[index]; }
 type IndexerSymbol struct {
-	FunctionSymbol
+	AbstractFunctionShape
 }
 
+func (s IndexerSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s IndexerSymbol) FunctionShape() string {
 	return "Indexer"
 }
@@ -918,9 +1187,12 @@ func (s IndexerSymbol) FunctionShape() string {
 // @co.dap.operator(symbol='∩', mode=overload)
 // @co.dap.extension(fortype=co.Set, what=extends)intersection(...)
 type OperatorFunctionSymbol struct {
-	FunctionSymbol
+	AbstractFunctionShape
 }
 
+func (s OperatorFunctionSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s OperatorFunctionSymbol) FunctionShape() string {
 	return "Operator_Function"
 }
@@ -928,9 +1200,12 @@ func (s OperatorFunctionSymbol) FunctionShape() string {
 // @co.dap.inline
 // x ()->()={}
 type InlineFunctionSymbol struct {
-	SymbolDetails
+	AbstractFunctionShape
 }
 
+func (s InlineFunctionSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s InlineFunctionSymbol) FunctionShape() string {
 	return "inline_function"
 }
@@ -938,9 +1213,12 @@ func (s InlineFunctionSymbol) FunctionShape() string {
 // @co.dap.local
 // x ()->()={}
 type LocalFunctionSymbol struct {
-	SymbolDetails
+	AbstractFunctionShape
 }
 
+func (s LocalFunctionSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s LocalFunctionSymbol) FunctionShape() string {
 	return "local_function"
 }
@@ -948,9 +1226,12 @@ func (s LocalFunctionSymbol) FunctionShape() string {
 // @co.dap.nested
 // x ()->()={}
 type NestedFunctionSymbol struct {
-	SymbolDetails
+	AbstractFunctionShape
 }
 
+func (s NestedFunctionSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s NestedFunctionSymbol) FunctionShape() string {
 	return "nested_function"
 }
@@ -958,27 +1239,36 @@ func (s NestedFunctionSymbol) FunctionShape() string {
 // @co.dap.inner
 // x ()->()={}
 type InnerFunctionSymbol struct {
-	SymbolDetails
+	AbstractFunctionShape
 }
 
+func (s InnerFunctionSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s InnerFunctionSymbol) FunctionShape() string {
 	return "inner_function"
 }
 
 // @@new() @@init() ...
 type LifecycleSymbol struct {
-	SymbolDetails
+	AbstractFunctionShape
 }
 
+func (s LifecycleSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s LifecycleSymbol) FunctionShape() string {
 	return "LifecycleMethods"
 }
 
 // (g MyList) get(index co.int)->(co.int) ={ this => g.eles[index]; }
 type AssociatedFunction struct {
-	FunctionSymbol
+	AbstractFunctionShape
 }
 
+func (s AssociatedFunction) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s AssociatedFunction) FunctionShape() string {
 	return "Associated_Function"
 }
@@ -988,17 +1278,23 @@ func (s AssociatedFunction) FunctionShape() string {
 // x co.function = add;
 
 type FunctionObject struct {
-	FunctionSymbol
+	AbstractFunctionShape
 }
 
+func (s FunctionObject) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s FunctionObject) Kind() string {
 	return "Function Object"
 }
 
 type Callable struct {
-	FunctionSymbol
+	AbstractFunctionShape
 }
 
+func (s Callable) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s Callable) Kind() string {
 	return "Callable"
 }
@@ -1017,6 +1313,9 @@ type Variable struct {
 	IsPathDependent bool // x somevar.type; kinds
 }
 
+func (s Variable) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (a Variable) IdentifierType() string {
 	return "Variable"
 }
@@ -1026,6 +1325,9 @@ type Parameter struct {
 	SymbolDetails
 }
 
+func (s Parameter) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (a Parameter) IdentifierType() string {
 	return "Parameter"
 }
@@ -1035,6 +1337,9 @@ type Return struct {
 	SymbolDetails
 }
 
+func (s Return) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (a Return) IdentifierType() string {
 	return "Return"
 }
@@ -1044,6 +1349,9 @@ type KindIdentifier struct {
 	SymbolDetails
 }
 
+func (s KindIdentifier) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (a KindIdentifier) IdentifierType() string {
 	return "KindIdentifier"
 }
@@ -1053,45 +1361,47 @@ type TypeIdentifier struct {
 	SymbolDetails
 }
 
+func (s TypeIdentifier) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (a TypeIdentifier) IdentifierType() string {
 	return "TypeIdentifier"
 }
 
 // ()->()={}
 type FunctionShapeIdentifier struct {
-	SymbolDetails
+	AbstractFunctionShape
+}
+
+func (s FunctionShapeIdentifier) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (a FunctionShapeIdentifier) IdentifierType() string {
 	return "FunctionShape"
 }
 
+type BackendBinding struct {
+	ImplementationKind string
+	RuntimeOperationID string
+	ExternalName       string
+	CallingConvention  string
+	Linkage            string
+}
+
 // @co.
 type PDADSymbol struct {
 	SymbolDetails
-	Kind_ string // annotation. pragma, directive, decorator
+	BackendBinding
+	IsFFIABI bool
+	Kind_    string // annotation. pragma, directive, decorator
 }
 
+func (s PDADSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (a PDADSymbol) Kind() string {
 	return a.Kind_
-}
-
-// result := (x <- IntList{1,2,3}).yield(x * 2);
-type ComprehensionSymbol struct {
-	SymbolDetails
-}
-
-func (a ComprehensionSymbol) Kind() string {
-	return "ComprehensionSymbol"
-}
-
-// println(...)
-type CallExpr struct {
-	SymbolDetails
-}
-
-func (s CallExpr) Kind() string {
-	return "CallExpr"
 }
 
 type OperatorFixity string
@@ -1126,8 +1436,12 @@ type OperatorSymbol struct {
 	Vectorizable    bool
 	DistributesOver []string
 	Desugar         string
+	Spelling        string
 }
 
+func (s OperatorSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s OperatorSymbol) Kind() string {
 	return "Operator_Symbol"
 }
@@ -1137,6 +1451,9 @@ type BuiltInProtoTypalProp struct {
 	SymbolDetails
 }
 
+func (s BuiltInProtoTypalProp) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s BuiltInProtoTypalProp) Kind() string {
 	return "BuiltIn_Proto_Typal"
 }
@@ -1146,6 +1463,9 @@ type Literal struct {
 	SymbolDetails
 }
 
+func (s Literal) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s Literal) Kind() string {
 	return "Literal"
 }
@@ -1155,7 +1475,7 @@ type KeywordKind string
 const (
 	This KeywordKind = "this"
 	Co   KeywordKind = "co"
-	FΦλ  KeywordKind = "fΦλ"
+	Fol  KeywordKind = "fΦλ"
 )
 
 // this->parent, this->parents etc.,
@@ -1163,6 +1483,9 @@ type ThisProperties struct {
 	SymbolDetails
 }
 
+func (s ThisProperties) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s ThisProperties) Kind() string {
 	return "this_property"
 }
@@ -1172,6 +1495,9 @@ type CoProperties struct {
 	SymbolDetails
 }
 
+func (s CoProperties) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s CoProperties) Kind() string {
 	return "Co_property"
 }
@@ -1181,50 +1507,32 @@ type FΦλProperties struct {
 	SymbolDetails
 }
 
+func (s FΦλProperties) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s FΦλProperties) Kind() string {
 	return "FΦλ_property"
 }
 
-// $->>
-type ContinueSymbol struct {
+type SigileSymbol struct {
 	SymbolDetails
 }
 
-func (s ContinueSymbol) Kind() string {
-	return "continue"
+func (s SigileSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
-
-// $=> <value(s)>
-type ReturnSymbol struct {
-	SymbolDetails
-}
-
-func (s ReturnSymbol) Kind() string {
-	return "Return"
-}
-
-// $->|
-type BreakSymbol struct {
-	SymbolDetails
-}
-
-func (s BreakSymbol) Kind() string {
-	return "Break"
-}
-
-// $^=> <values>
-type ReturnEscapeSymbol struct {
-	SymbolDetails
-}
-
-func (s ReturnEscapeSymbol) Kind() string {
-	return "escape_return"
+func (s SigileSymbol) Kind() string {
+	return "Context_Sigil"
 }
 
 // this co
 type ReservedWord struct {
 	SymbolDetails
 	Kind_ KeywordKind
+}
+
+func (s ReservedWord) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s ReservedWord) Kind() string {
@@ -1237,6 +1545,9 @@ type LabelSymbol struct {
 	Kind_ string
 }
 
+func (s LabelSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s LabelSymbol) Kind() string {
 	return s.Kind_
 }
@@ -1244,6 +1555,10 @@ func (s LabelSymbol) Kind() string {
 // a()->()=>>b()
 type ChainedMethodSymbol struct {
 	SymbolDetails
+}
+
+func (s ChainedMethodSymbol) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
 }
 
 func (s ChainedMethodSymbol) Kind() string {
@@ -1256,31 +1571,11 @@ type MatchBindings struct {
 	SymbolDetails
 }
 
+func (s MatchBindings) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s MatchBindings) Kind() string {
 	return "MatchBindings"
-}
-
-// (x > 10)
-// co.const.true  even though it is boolean but when participates in an expression like
-// true.then() it will be wrapped into conditionobject
-// which contains boolean truth and boolean executed
-// so when the next in chain  otherwise , default methods are available on condition object
-// then method is available on both boolean and conndition object
-type ConditionObject struct {
-	SymbolDetails
-}
-
-func (s ConditionObject) Kind() string {
-	return "ConditionObject"
-}
-
-// x.match() match generate pattern object on that we have methods like case and default
-type PatternObject struct {
-	SymbolDetails
-}
-
-func (s PatternObject) Kind() string {
-	return "PatternObject"
 }
 
 // |idx, val| => co.out.println(val)
@@ -1288,6 +1583,9 @@ type LambdaExpression struct {
 	SymbolDetails
 }
 
+func (s LambdaExpression) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
 func (s LambdaExpression) Kind() string {
 	return "lambda_expression"
 }
@@ -1323,7 +1621,7 @@ var _ SymbolInfo = (*TagType)(nil)
 var _ SymbolInfo = (*ArrayType)(nil)
 var _ SymbolInfo = (*PointerType)(nil)
 var _ SymbolInfo = (*ReferenceType)(nil)
-var _ SymbolInfo = (*AdressType)(nil)
+var _ SymbolInfo = (*AddressType)(nil)
 var _ SymbolInfo = (*WordType)(nil)
 var _ SymbolInfo = (*RangeType)(nil)
 var _ SymbolInfo = (*ThunkType)(nil)
@@ -1354,7 +1652,7 @@ var _ SymbolInfo = (*SymbolSymbol)(nil)
 
 var _ SymbolInfo = (*FunctionSymbol)(nil)
 var _ SymbolInfo = (*DecoratorSymbol)(nil)
-var _ SymbolInfo = (*ExensionMethodSymbol)(nil)
+var _ SymbolInfo = (*ExtensionMethodSymbol)(nil)
 var _ SymbolInfo = (*NativeFunctionSymbol)(nil)
 var _ SymbolInfo = (*MacroSymbol)(nil)
 var _ SymbolInfo = (*TemplateSymbol)(nil)
@@ -1377,8 +1675,7 @@ var _ SymbolInfo = (*KindIdentifier)(nil)
 var _ SymbolInfo = (*TypeIdentifier)(nil)
 var _ SymbolInfo = (*FunctionShapeIdentifier)(nil)
 var _ SymbolInfo = (*PDADSymbol)(nil)
-var _ SymbolInfo = (*ComprehensionSymbol)(nil)
-var _ SymbolInfo = (*CallExpr)(nil)
+
 var _ SymbolInfo = (*OperatorSymbol)(nil)
 var _ SymbolInfo = (*BuiltInProtoTypalProp)(nil)
 var _ SymbolInfo = (*Literal)(nil)
