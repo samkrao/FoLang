@@ -12,12 +12,12 @@ func TestSymbolUtilitiesUseCanonicalSymbolKinds(t *testing.T) {
 		Name_:         "item",
 		SymbolTableId: "table",
 	}}
-	function := &FunctionSymbol{SymbolDetails: SymbolDetails{
+	function := &FunctionSymbol{AbstractFunctionShape: AbstractFunctionShape{SymbolDetails: SymbolDetails{
 		SymbolId_:     "function-id",
 		SymbolType_:   "callable",
 		Name_:         "transform",
 		SymbolTableId: "table",
-	}}
+	}}}
 	fs.RegisterSymbol(variable)
 	fs.RegisterSymbol(function)
 
@@ -54,11 +54,11 @@ func TestSymbolUtilitiesWalkParentTablesSafely(t *testing.T) {
 		Name_:         "value",
 		SymbolTableId: "parent",
 	}}
-	localFunction := &FunctionSymbol{SymbolDetails: SymbolDetails{
+	localFunction := &FunctionSymbol{AbstractFunctionShape: AbstractFunctionShape{SymbolDetails: SymbolDetails{
 		SymbolId_:     "local-function",
 		Name_:         "value",
 		SymbolTableId: "child",
-	}}
+	}}}
 	fs.RegisterSymbol(parentVariable)
 	fs.RegisterSymbol(localFunction)
 

@@ -955,6 +955,9 @@ const (
 
 type AbstractFunctionShape struct {
 	SymbolDetails
+	SignatureTypeId SymbolID
+	Parameters      []SymbolID
+	Results         []SymbolID
 }
 
 // x ()->()={}
@@ -1323,6 +1326,7 @@ func (a Variable) IdentifierType() string {
 // SomeParameter
 type Parameter struct {
 	SymbolDetails
+	Position int
 }
 
 func (s Parameter) SymbolTypeKind() string {
@@ -1335,6 +1339,7 @@ func (a Parameter) IdentifierType() string {
 // SomeReturntype
 type Return struct {
 	SymbolDetails
+	Position int
 }
 
 func (s Return) SymbolTypeKind() string {
@@ -1366,19 +1371,6 @@ func (s TypeIdentifier) SymbolTypeKind() string {
 }
 func (a TypeIdentifier) IdentifierType() string {
 	return "TypeIdentifier"
-}
-
-// ()->()={}
-type FunctionShapeIdentifier struct {
-	AbstractFunctionShape
-}
-
-func (s FunctionShapeIdentifier) SymbolTypeKind() string {
-	return string(reflect.TypeOf(s).Name())
-}
-
-func (a FunctionShapeIdentifier) IdentifierType() string {
-	return "FunctionShape"
 }
 
 type BackendBinding struct {
@@ -1673,7 +1665,7 @@ var _ SymbolInfo = (*Parameter)(nil)
 var _ SymbolInfo = (*Return)(nil)
 var _ SymbolInfo = (*KindIdentifier)(nil)
 var _ SymbolInfo = (*TypeIdentifier)(nil)
-var _ SymbolInfo = (*FunctionShapeIdentifier)(nil)
+
 var _ SymbolInfo = (*PDADSymbol)(nil)
 
 var _ SymbolInfo = (*OperatorSymbol)(nil)
