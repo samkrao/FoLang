@@ -2,95 +2,74 @@ package ast
 
 import symboltable "github.com/samkrao/fo-lang/src/context"
 
-// DefinitionHeader contains the source span, canonical symbol identity, and
-// metadata attached to any symbol-introducing definition.
+// DefinitionHeader is shared source structure for symbol-introducing nodes.
+// The concrete record in FolangSymbols determines the semantic declaration
+// kind; the AST does not repeat that classification.
 type DefinitionHeader struct {
 	Span
 	Symbol   symboltable.SymbolID
-	Metadata []SET
+	Metadata []MetadataRef
+	Kind_    NodeKind
 }
 
-// DefinitionKind records source syntax. The resolved context symbol remains
-// authoritative for richer semantic distinctions and validation.
-type DefinitionKind string
-
-const (
-	DefinitionVariable       DefinitionKind = "variable"
-	DefinitionLetVariable    DefinitionKind = "let_variable"
-	DefinitionFunction       DefinitionKind = "function"
-	DefinitionLetFunction    DefinitionKind = "let_function"
-	DefinitionType           DefinitionKind = "type"
-	DefinitionTypeComponent  DefinitionKind = "type_component"
-	DefinitionAssociatedType DefinitionKind = "associated_type"
-	DefinitionStruct         DefinitionKind = "struct"
-	DefinitionCStruct        DefinitionKind = "cstruct"
-	DefinitionClass          DefinitionKind = "class"
-	DefinitionInterface      DefinitionKind = "interface"
-	DefinitionModule         DefinitionKind = "module"
-	DefinitionSignature      DefinitionKind = "signature"
-	DefinitionObject         DefinitionKind = "object"
-	DefinitionMixin          DefinitionKind = "mixin"
-	DefinitionTrait          DefinitionKind = "trait"
-	DefinitionInstance       DefinitionKind = "instance"
-	DefinitionTypeClass      DefinitionKind = "typeclass"
-	DefinitionMatcher        DefinitionKind = "matcher"
-	DefinitionIndexer        DefinitionKind = "indexer"
-	DefinitionMacro          DefinitionKind = "macro"
-	DefinitionExtension      DefinitionKind = "extension"
-	DefinitionNativeMethod   DefinitionKind = "native_method"
-	DefinitionDelegate       DefinitionKind = "delegate"
-	DefinitionVariant        DefinitionKind = "variant"
-	DefinitionVariantState   DefinitionKind = "variant_state"
-	DefinitionEnum           DefinitionKind = "enum"
-	DefinitionEnumState      DefinitionKind = "enum_state"
-	DefinitionApplication    DefinitionKind = "application"
-	DefinitionLibrary        DefinitionKind = "library"
-	DefinitionProject        DefinitionKind = "project"
-)
-
-// FunctionShapeDefinition represents callable declarations. The context
-// symbol carries the detailed callable shape; this node keeps only callable
-// syntax shared by functions, methods, macros, operators, and indexers.
-type FunctionShapeDefinition struct {
+// Declaration represents a declaration whose resolved information is fully
+// carried by its symbol, such as a bodyless specification.
+type Declaration struct {
 	DefinitionHeader
-	Kind DefinitionKind
-
-	Signature         Type
-	Parameters        []Def
-	Results           []Type
-	GenericParameters []Def
-	Body              Block
 }
 
-func (FunctionShapeDefinition) NodeKind() string { return "FunctionShapeDefinition" }
-func (FunctionShapeDefinition) def()             {}
+func (Declaration) NodeKind() string { return "Declaration" }
+func (Declaration) def()             {}
 
-// Definition represents non-callable symbol-introducing forms. Optional
-// fields are populated according to Kind; semantic meaning is resolved through
-// Symbol in the context package rather than by creating a node per symbol kind.
-type Definition struct {
+// ValueDefinition represents variables, fields, enum states, and other
+// declarations that may have an initializer.
+type ValueDefinition struct {
 	DefinitionHeader
-	Kind DefinitionKind
-
-	GenericParameters []Def
-	DeclaredType      Type
-	Underlying        Type
-	Binding           Type
-	Base              Type
-	Predicate         Expr
-	Value             Expr
-
-	Fields  []Def
-	Members []Def
-	States  []Def
-	Body    Block
-
-	Exported bool
+	Initializer Expr
 }
 
-func (Definition) NodeKind() string { return "Definition" }
-func (Definition) def()             {}
+func (ValueDefinition) NodeKind() string { return "ValueDefinition" }
+func (ValueDefinition) def()             {}
 
-// EntryKind implements Entry without duplicating entry-specific definition
-// node types.
-func (d Definition) EntryKind() string { return string(d.Kind) }
+// TypeDefinition retains the source RHS of a named type declaration. The
+// symbol identifies whether it is an alias, newtype, refinement, dependent,
+// parameterized, or another semantic type category.
+type TypeDefinition struct {
+	DefinitionHeader
+	Value Type
+}
+
+func (TypeDefinition) NodeKind() string { return "TypeDefinition" }
+func (TypeDefinition) def()             {}
+
+// ContextDefinition represents a declaration with a member body, including
+// structs, classes, modules, objects, components, and related kinds.
+type ContextDefinition struct {
+	DefinitionHeader
+	Body Block
+}
+
+func (ContextDefinition) NodeKind() string { return "ContextDefinition" }
+func (ContextDefinition) def()             {}
+
+// ParameterDefault keeps executable default-value syntax outside the symbol
+// record while linking it to the canonical parameter symbol.
+type ParameterDefault struct {
+	Span
+	Parameter symboltable.SymbolID
+	Value     Expr
+}
+
+func (ParameterDefault) NodeKind() string { return "ParameterDefault" }
+
+// CallableDefinition represents every named callable shape. Signature,
+// parameters, results, and callable classification live on its function-shape
+// symbol. A nil Body denotes a forward/bodyless declaration.
+type CallableDefinition struct {
+	DefinitionHeader
+	Defaults []ParameterDefault
+	Body     *Block
+}
+
+func (CallableDefinition) NodeKind() string { return "CallableDefinition" }
+func (CallableDefinition) def()             {}

@@ -1,17 +1,19 @@
-// Package ast defines the high-level intermediate representation (HIR) AST node types
-// used by the fo-lang frontend parser.
+// Package ast defines the resolved high-level intermediate representation
+// produced by the FoLang frontend. Nodes retain source structure and spans;
+// canonical semantic identity and classification live in context symbols.
 package ast
 
 import symboltable "github.com/samkrao/fo-lang/src/context"
 
-// SET is the base interface for all AST nodes that can be visited and annotated.
+type NodeKind string
+
+// SET is the common interface for every AST/HIR node.
 type SET interface {
+	Spanned
 	NodeKind() string
 }
 
-// Def is implemented by every declaration that introduces a symbol.
-// Definitions include variables, functions, types, components, and metadata
-// declarations. A definition is not automatically an executable statement.
+// Def is implemented by declarations that introduce a symbol.
 type Def interface {
 	SET
 	def()
@@ -23,45 +25,56 @@ type Stmt interface {
 	stmt()
 }
 
-// Expr is implemented by constructs that evaluate a value or produce an effect
-// as part of a larger expression or statement.
+// Expr is implemented by constructs that produce a value or effect.
 type Expr interface {
 	SET
 	expr()
 }
 
-// Type is implemented by constructs that describe the shape of a value.
+// Type is implemented by source type expressions. Symbol resolves to the
+// canonical semantic type record once resolution completes.
 type Type interface {
 	SET
 	_type()
 }
 
-// Pattern is implemented by nodes used to test or destructure a value in a
-// match case. Patterns are neither executable statements nor value expressions.
+// Pattern is implemented by match and destructuring patterns.
 type Pattern interface {
 	SET
 	pattern()
 }
 
-// Name is the source-level identity of a name introduced by a pattern. The
-// canonical semantic record is identified by Symbol.
-type Name struct {
+// Binder is implemented by patterns that introduce symbols.
+type Binder interface {
+	BoundSymbols() []symboltable.SymbolID
+}
+
+// MetadataRef preserves the occurrence span while referring to the canonical
+// MetaDataApplication record in FolangSymbols.SymbolsById.
+type MetadataRef struct {
+	Span
 	Symbol symboltable.SymbolID
 }
 
-// Binder is an optional capability implemented by patterns that can introduce
-// names into the scope of a match arm. It is not an AST node category.
-type Binder interface {
-	BoundNames() []Name
+func (MetadataRef) NodeKind() string { return "MetadataRef" }
+
+// Block retains ordered body items and the optional unterminated tail
+// expression that supplies the block's value.
+type Block struct {
+	Span
+	Items  []SET
+	Result Expr
 }
 
-// Block is an ordered collection of definitions and statements. It is used for
-// callable bodies, module/type bodies, loop bodies, match arms, and direct
-// blocks. SET is intentional: definitions and statements may occur together.
-type Block []SET
+func (Block) NodeKind() string { return "Block" }
 
-// Entry is a source-level entry definition such as an application or library.
-type Entry interface {
-	Def
-	EntryKind() string
+// SourceFile is the serialization/parser root. Directives and pragmas attach
+// here rather than to the file's primary declaration.
+type SourceFile struct {
+	Span
+	Filename string
+	Metadata []MetadataRef
+	Items    []SET
 }
+
+func (SourceFile) NodeKind() string { return "SourceFile" }

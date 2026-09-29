@@ -2,21 +2,24 @@ package ast
 
 import symboltable "github.com/samkrao/fo-lang/src/context"
 
-// NamedType is a type use resolved through its symbol. The symbol table owns
-// the semantic category: builtin, alias, refinement, dependent, parameterized,
-// data, associated, or another user-defined type.
-type NamedType struct {
+// TypeHeader links source type syntax to its resolved semantic type symbol.
+type TypeHeader struct {
 	Span
 	Symbol symboltable.SymbolID
+	Kind_  NodeKind
+}
+
+// NamedType is a direct type reference.
+type NamedType struct {
+	TypeHeader
 }
 
 func (NamedType) NodeKind() string { return "NamedType" }
 func (NamedType) _type()           {}
 
-// TypeApplication applies type or value arguments to a type-producing symbol.
-// Value arguments support dependent applications such as Vector(3).
+// TypeApplication applies type or dependent-value arguments to a type.
 type TypeApplication struct {
-	Span
+	TypeHeader
 	Callee    Type
 	TypeArgs  []Type
 	ValueArgs []Expr
@@ -25,9 +28,10 @@ type TypeApplication struct {
 func (TypeApplication) NodeKind() string { return "TypeApplication" }
 func (TypeApplication) _type()           {}
 
-// FunctionType describes callable parameter and result types.
+// FunctionType preserves callable type syntax while Symbol identifies the
+// canonical FunctionType/DelegateType record.
 type FunctionType struct {
-	Span
+	TypeHeader
 	Parameters []Type
 	Results    []Type
 }
@@ -35,21 +39,18 @@ type FunctionType struct {
 func (FunctionType) NodeKind() string { return "FunctionType" }
 func (FunctionType) _type()           {}
 
-// TupleType describes a tuple of types.
 type TupleType struct {
-	Span
+	TypeHeader
 	Elements []Type
 }
 
 func (TupleType) NodeKind() string { return "TupleType" }
 func (TupleType) _type()           {}
 
-// DerivedType describes source-level type constructors such as pointers,
-// references, arrays, ranges, slices, thunks, and addresses. Kind is syntax,
-// not a context-symbol classification.
+// DerivedType preserves derivation operands and dependent dimensions. The
+// concrete symbol identifies array, pointer, reference, slice, range, etc.
 type DerivedType struct {
-	Span
-	Kind       string
+	TypeHeader
 	Element    Type
 	Dimensions []Expr
 }
@@ -57,26 +58,20 @@ type DerivedType struct {
 func (DerivedType) NodeKind() string { return "DerivedType" }
 func (DerivedType) _type()           {}
 
-// InferType represents an omitted type inferred from an initializer.
-type InferType struct {
-	Span
+type RefinementTypeExpr struct {
+	TypeHeader
+	Base      Type
+	Predicate Expr
 }
 
-func (InferType) NodeKind() string { return "InferType" }
-func (InferType) _type()           {}
+func (RefinementTypeExpr) NodeKind() string { return "RefinementTypeExpr" }
+func (RefinementTypeExpr) _type()           {}
 
-// DynamicType represents the dynamic declaration form.
-type DynamicType struct {
-	Span
+type PredicateTypeExpr struct {
+	TypeHeader
+	Binder    symboltable.SymbolID
+	Predicate Expr
 }
 
-func (DynamicType) NodeKind() string { return "DynamicType" }
-func (DynamicType) _type()           {}
-
-// UnitType is the empty result/type shape.
-type UnitType struct {
-	Span
-}
-
-func (UnitType) NodeKind() string { return "UnitType" }
-func (UnitType) _type()           {}
+func (PredicateTypeExpr) NodeKind() string { return "PredicateTypeExpr" }
+func (PredicateTypeExpr) _type()           {}

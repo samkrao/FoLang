@@ -732,6 +732,7 @@ func (s EnumSymbol) SymbolTypeKind() string {
 // _ co.module={}
 type ModuleSymbol struct {
 	KindSymbol
+	Signature []SymbolID
 }
 
 func (s ModuleSymbol) SymbolTypeKind() string {
@@ -770,7 +771,12 @@ func (s InterfaceSymbol) SymbolTypeKind() string {
 // _ co.class = {}
 type ClassSymbol struct {
 	KindSymbol
-	Anonymous bool
+	Anonymous  bool
+	Traits     []SymbolID
+	Mixins     []SymbolID
+	Extensions []SymbolID
+	Interfaces []SymbolID
+	Classes    []SymbolID
 }
 
 func (s ClassSymbol) SymbolTypeKind() string {
@@ -795,6 +801,7 @@ func (s TypeClassSymbol) Kind() string {
 // _ co.instance= {}
 type InstanceSymbol struct {
 	KindSymbol
+	TypeClass SymbolID
 }
 
 func (s InstanceSymbol) SymbolTypeKind() string {

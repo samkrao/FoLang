@@ -2,68 +2,65 @@ package ast
 
 import symboltable "github.com/samkrao/fo-lang/src/context"
 
-// MatchCase is a match arm. The pattern may implement Binder; its bound names
-// are visible only while evaluating Body.
-type MatchCase struct {
-	Span
-	Pattern Pattern
-	Body    Block
+type StatementHeader struct {
+	Kind_ NodeKind
 }
-
-func (MatchCase) NodeKind() string { return "MatchCase" }
-
-// EmptyStatement represents an intentionally empty statement.
 type EmptyStatement struct {
 	Span
+	StatementHeader
 }
 
 func (EmptyStatement) NodeKind() string { return "EmptyStatement" }
 func (EmptyStatement) stmt()            {}
 
-// ExpressionStatement evaluates an expression for its effects and discards its
-// result. A standalone call such as foo(); is represented this way.
 type ExpressionStatement struct {
 	Span
+	StatementHeader
 	Expression Expr
 }
 
 func (ExpressionStatement) NodeKind() string { return "ExpressionStatement" }
 func (ExpressionStatement) stmt()            {}
 
-// AssignmentStatement assigns the value of Value to Target.
-type AssignmentStatement struct {
+// MultipleAssignmentStatement is the structural multi-target assignment form.
+// Ordinary and compound assignments are expressions wrapped by
+// ExpressionStatement when used as statements.
+type MultipleAssignmentStatement struct {
 	Span
-	Target Expr
-	Value  Expr
+	StatementHeader
+	Targets []Expr
+	Values  []Expr
 }
 
-func (AssignmentStatement) NodeKind() string { return "AssignmentStatement" }
-func (AssignmentStatement) stmt()            {}
+func (MultipleAssignmentStatement) NodeKind() string { return "MultipleAssignmentStatement" }
+func (MultipleAssignmentStatement) stmt()            {}
 
-// CompoundAssignmentStatement represents operators such as += and ?=.
-type CompoundAssignmentStatement struct {
-	Span
-	Target   Expr
-	Operator string
-	Value    Expr
-}
-
-func (CompoundAssignmentStatement) NodeKind() string { return "CompoundAssignmentStatement" }
-func (CompoundAssignmentStatement) stmt()            {}
-
-// ReturnStatement returns an optional value from the enclosing callable.
 type ReturnStatement struct {
 	Span
-	Value Expr
+	StatementHeader
+	Values []Expr
 }
 
 func (ReturnStatement) NodeKind() string { return "ReturnStatement" }
 func (ReturnStatement) stmt()            {}
 
-// LoopStatement is the HIR form of condition.loop({ ... }). The surface syntax
-// is a postfix call, but the reference defines loop as a control statement.
+// EnclosingCallableReturnStatement represents this ^=> from an anonymous call
+// argument block. It is intentionally distinct from an ordinary return.
+type EnclosingCallableReturnStatement struct {
+	Span
+	StatementHeader
+	Values []Expr
+}
+
+func (EnclosingCallableReturnStatement) NodeKind() string {
+	return "EnclosingCallableReturnStatement"
+}
+func (EnclosingCallableReturnStatement) stmt() {}
+
+// LoopStatement is the normalized HIR for condition.loop(block).
 type LoopStatement struct {
 	Span
+	StatementHeader
 	Condition Expr
 	Body      Block
 	Label     symboltable.SymbolID
@@ -72,37 +69,47 @@ type LoopStatement struct {
 func (LoopStatement) NodeKind() string { return "LoopStatement" }
 func (LoopStatement) stmt()            {}
 
-// ConditionalBranch is one branch of a then/otherwise/default selection.
-type ConditionalBranch struct {
+type LockStatement struct {
 	Span
-	Condition Expr
-	Body      Block
-	IsDefault bool
+	StatementHeader
+	Lock Expr
+	Body Block
 }
 
-func (ConditionalBranch) NodeKind() string { return "ConditionalBranch" }
+func (LockStatement) NodeKind() string { return "LockStatement" }
+func (LockStatement) stmt()            {}
 
-// SelectionStatement is the HIR form of a then/otherwise/default chain.
-type SelectionStatement struct {
+type BlockStatement struct {
 	Span
-	Branches []ConditionalBranch
+	StatementHeader
+	Body Block
 }
 
-func (SelectionStatement) NodeKind() string { return "SelectionStatement" }
-func (SelectionStatement) stmt()            {}
+func (BlockStatement) NodeKind() string { return "BlockStatement" }
+func (BlockStatement) stmt()            {}
 
-// BreakStatement exits the nearest or named loop.
+type LabeledBlockStatement struct {
+	Span
+	StatementHeader
+	Label symboltable.SymbolID
+	Body  Block
+}
+
+func (LabeledBlockStatement) NodeKind() string { return "LabeledBlockStatement" }
+func (LabeledBlockStatement) stmt()            {}
+
 type BreakStatement struct {
 	Span
+	StatementHeader
 	Label symboltable.SymbolID
 }
 
 func (BreakStatement) NodeKind() string { return "BreakStatement" }
 func (BreakStatement) stmt()            {}
 
-// ContinueStatement advances the nearest or named loop.
 type ContinueStatement struct {
 	Span
+	StatementHeader
 	Label symboltable.SymbolID
 }
 

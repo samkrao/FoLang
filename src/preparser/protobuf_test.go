@@ -28,7 +28,13 @@ func TestSerializeDeserializeProtobufArtifact(t *testing.T) {
 		Type_:         "co.int",
 		SymbolTableId: "table:root",
 	}}
+	literal := &symboltable.Literal{SymbolDetails: symboltable.SymbolDetails{
+		SymbolId_: "literal:42",
+		Name_:     "42",
+		Type_:     "co.int",
+	}}
 	symbols.RegisterSymbol(variable)
+	symbols.RegisterSymbol(literal)
 	symbols.AddSymbolTable(&symboltable.SymbolTable{
 		Id:            "table:root",
 		ContextId:     "context:root",
@@ -57,18 +63,17 @@ func TestSerializeDeserializeProtobufArtifact(t *testing.T) {
 
 	surface := &symboltable.FolangSymbols{}
 	surface.CreateFolangSymbols()
-	root := ast.Definition{
-		DefinitionHeader: ast.DefinitionHeader{
-			Span: ast.NewSpan(
-				*helpers.NewPosition(0, 1, 1, 0, "test.fol", "value = 42", false),
-				*helpers.NewPosition(10, 1, 11, 10, "test.fol", "value = 42", false),
-			),
-			Symbol: "symbol:value",
-		},
-		Kind:         ast.DefinitionVariable,
-		DeclaredType: ast.NamedType{Symbol: "co.int"},
-		Value:        ast.LiteralExpr{Value: int64(42)},
-		Exported:     true,
+	span := ast.NewSpan(
+		*helpers.NewPosition(0, 1, 1, 0, "test.fol", "value = 42", false),
+		*helpers.NewPosition(10, 1, 11, 10, "test.fol", "value = 42", false),
+	)
+	root := ast.SourceFile{
+		Span:     span,
+		Filename: "test.fol",
+		Items: []ast.SET{ast.ValueDefinition{
+			DefinitionHeader: ast.DefinitionHeader{Span: span, Symbol: "symbol:value"},
+			Initializer:      ast.LiteralExpr{Span: span, Symbol: "literal:42"},
+		}},
 	}
 
 	filename := filepath.Join(t.TempDir(), "nested", "library.folenc")
@@ -120,13 +125,20 @@ func TestSerializeDeserializeProtobufArtifact(t *testing.T) {
 	if gotOperator == nil || gotOperator.Fixity != symboltable.OperatorInfix || gotOperator.Precedence != 60 {
 		t.Fatalf("operator = %#v", gotOperator)
 	}
-	gotRoot, ok := decoded.Ast.(ast.Definition)
+	gotRoot, ok := decoded.Ast.(ast.SourceFile)
 	if !ok {
-		t.Fatalf("AST type = %T, want ast.Definition", decoded.Ast)
+		t.Fatalf("AST type = %T, want ast.SourceFile", decoded.Ast)
 	}
-	gotLiteral, ok := gotRoot.Value.(ast.LiteralExpr)
-	if !ok || gotLiteral.Value != int64(42) {
-		t.Fatalf("literal = %#v", gotRoot.Value)
+	if len(gotRoot.Items) != 1 {
+		t.Fatalf("AST items = %d, want 1", len(gotRoot.Items))
+	}
+	gotDefinition, ok := gotRoot.Items[0].(ast.ValueDefinition)
+	if !ok {
+		t.Fatalf("AST item type = %T, want ast.ValueDefinition", gotRoot.Items[0])
+	}
+	gotLiteral, ok := gotDefinition.Initializer.(ast.LiteralExpr)
+	if !ok || gotLiteral.Symbol != "literal:42" {
+		t.Fatalf("literal = %#v", gotDefinition.Initializer)
 	}
 }
 

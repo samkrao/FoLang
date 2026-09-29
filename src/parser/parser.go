@@ -16,8 +16,7 @@ type Parser struct {
 }
 
 func (parser Parser) Parse() ast.SET {
-
-	return ast.Definition{}
+	return ast.SourceFile{}
 }
 
 func (parser Parser) ParseOperators() *symboltable.FolangSymbols {
@@ -25,11 +24,9 @@ func (parser Parser) ParseOperators() *symboltable.FolangSymbols {
 }
 
 func (parser Parser) ParsePackaged() ast.SET {
-
-	return ast.Definition{}
+	return ast.SourceFile{}
 }
 
 func (parser Parser) ParseComponents() ast.SET {
-
-	return ast.Definition{}
+	return ast.SourceFile{}
 }
