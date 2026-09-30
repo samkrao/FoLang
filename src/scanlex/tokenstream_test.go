@@ -12,15 +12,15 @@ func TestNewTokenStreamTreatsNilOperatorRegistryAsEmpty(t *testing.T) {
 	}
 }
 
-func TestTokenStreamPeekBuffersOnlyRequestedLookahead(t *testing.T) {
+func TestTokenStreamPeekLinksOnlyRequestedLookahead(t *testing.T) {
 	const source = "alpha beta gamma delta"
 	stream := NewTokenStream([]byte(source), "test.fol", emptyTestOperators)
 
 	if got := stream.Peek(0); got.Value != "alpha" {
 		t.Fatalf("Peek(0) = %q, want alpha", got.Value)
 	}
-	if got := len(stream.buffer); got != 1 {
-		t.Fatalf("Peek(0) buffered %d tokens, want 1", got)
+	if got := linkedTokenCount(stream.head); got != 1 {
+		t.Fatalf("Peek(0) linked %d tokens, want 1", got)
 	}
 	if got := stream.lexer.pos; got != len("alpha") {
 		t.Fatalf("Peek(0) scanned through byte %d, want %d", got, len("alpha"))
@@ -29,25 +29,26 @@ func TestTokenStreamPeekBuffersOnlyRequestedLookahead(t *testing.T) {
 	if got := stream.Peek(2); got.Value != "beta" {
 		t.Fatalf("Peek(2) = %q, want beta", got.Value)
 	}
-	if got := len(stream.buffer); got != 3 {
-		t.Fatalf("Peek(2) buffered %d tokens, want 3", got)
+	if got := linkedTokenCount(stream.head); got != 3 {
+		t.Fatalf("Peek(2) linked %d tokens, want 3", got)
 	}
 	if got := stream.lexer.pos; got >= len(source) {
 		t.Fatalf("Peek(2) eagerly scanned the complete source through byte %d", got)
 	}
 }
 
-func TestTokenStreamNextBuffersOneToken(t *testing.T) {
+func TestTokenStreamNextAdvancesLinkedCurrent(t *testing.T) {
 	stream := NewTokenStream([]byte("alpha beta"), "test.fol", emptyTestOperators)
 
-	if got := stream.Next(); got.Value != "alpha" {
-		t.Fatalf("first Next() = %q, want alpha", got.Value)
+	first := stream.Next()
+	if first.Value != "alpha" {
+		t.Fatalf("first Next() = %q, want alpha", first.Value)
 	}
-	if len(stream.buffer) != 0 {
-		t.Fatalf("Next() retained %d unrequested tokens", len(stream.buffer))
+	if first.State != TokenProcessed {
+		t.Fatalf("first token state = %v, want TokenProcessed", first.State)
 	}
-	if got := stream.lexer.pos; got != len("alpha") {
-		t.Fatalf("Next() scanned through byte %d, want %d", got, len("alpha"))
+	if stream.Current().Kind != SPACE || first.Next != stream.Current() || stream.Current().Prev != first {
+		t.Fatal("Next() did not advance current through linked parser tokens")
 	}
 
 	if got := stream.Next(); got.Kind != SPACE || got.Value != " " {
@@ -62,8 +63,8 @@ func TestTokenStreamNextBuffersOneToken(t *testing.T) {
 	if got := stream.Next(); got.Kind != EOF {
 		t.Fatalf("EOF was not stable: subsequent kind = %v", got.Kind)
 	}
-	if got := len(stream.history); got != 3 {
-		t.Fatalf("EOF calls changed consumed history length to %d, want 3", got)
+	if got, ok := stream.Previous(1); !ok || got.Value != "beta" {
+		t.Fatalf("Previous(1) after EOF = (%v, %v), want beta", got, ok)
 	}
 }
 
@@ -73,14 +74,12 @@ func TestTokenStreamPeekPastEOFStopsScanning(t *testing.T) {
 	if got := stream.Peek(10); got.Kind != EOF {
 		t.Fatalf("Peek past EOF kind = %v, want EOF", got.Kind)
 	}
-	if !stream.exhausted {
-		t.Fatal("stream did not remember reaching EOF")
+	eof := stream.Peek(10)
+	if eof.RawNext != nil || eof.Next != nil {
+		t.Fatal("EOF is not the final token in both linked views")
 	}
-	if got := len(stream.buffer); got != 1 {
-		t.Fatalf("stream buffered %d source tokens, want 1", got)
-	}
-	if got := stream.Peek(10); got.Kind != EOF {
-		t.Fatalf("repeated Peek past EOF kind = %v, want EOF", got.Kind)
+	if got := stream.Peek(10); got != eof {
+		t.Fatal("repeated Peek past EOF did not return the stable EOF node")
 	}
 }
 
@@ -100,8 +99,8 @@ func TestTokenStreamAtEOFSupportsIterationWithoutConsuming(t *testing.T) {
 			t.Fatalf("token %d = %q, want %q", i, values[i], want[i])
 		}
 	}
-	if len(stream.history) != len(want) {
-		t.Fatalf("AtEOF changed history: got %d consumed tokens, want %d", len(stream.history), len(want))
+	if got := parserTokenCount(stream.head); got != len(want)+1 {
+		t.Fatalf("linked parser tokens = %d, want %d including EOF", got, len(want)+1)
 	}
 	if !stream.AtEOF() || stream.Next().Kind != EOF {
 		t.Fatal("EOF was not stable after iteration")
@@ -190,6 +189,33 @@ func TestTokenStreamPreviousRejectsNonPositiveLookbehind(t *testing.T) {
 		}
 	}()
 	stream.Previous(0)
+}
+
+func TestTokenStreamDiscardKeepsRawLinksAndBypassesParserLinks(t *testing.T) {
+	stream := NewTokenStream([]byte("alpha beta"), "test.fol", emptyTestOperators)
+	alpha := stream.Next()
+	space := stream.Current()
+
+	if space.Kind != SPACE {
+		t.Fatalf("Current() kind = %v, want SPACE", space.Kind)
+	}
+	if discarded := stream.NextWH(); discarded != space {
+		t.Fatal("NextWH() did not return the discarded current token")
+	}
+	beta := stream.Current()
+
+	if beta.Value != "beta" || alpha.Next != beta || beta.Prev != alpha {
+		t.Fatal("parser links did not bypass discarded whitespace")
+	}
+	if alpha.RawNext != space || space.RawPrev != alpha || space.RawNext != beta || beta.RawPrev != space {
+		t.Fatal("discard changed the immutable raw links")
+	}
+	if space.Next != nil || space.Prev != nil || space.State != TokenDiscarded {
+		t.Fatal("discarded token retained parser links or the wrong state")
+	}
+	if previous, ok := stream.Previous(1); !ok || previous != alpha {
+		t.Fatal("Previous(1) encountered discarded whitespace")
+	}
 }
 
 func TestScannerPreservesTokenSubKinds(t *testing.T) {
@@ -345,13 +371,29 @@ func TestFoldTokensKeepsInvalidLexemesUnknownAndWhole(t *testing.T) {
 	}
 }
 
-func nextNonWhitespace(stream *TokenStream) Token {
+func nextNonWhitespace(stream *TokenStream) *Token {
 	for {
 		token := stream.Next()
 		if token.Kind != SPACE && token.Kind != NEWLINE {
 			return token
 		}
 	}
+}
+
+func linkedTokenCount(head *Token) int {
+	count := 0
+	for token := head; token != nil; token = token.RawNext {
+		count++
+	}
+	return count
+}
+
+func parserTokenCount(head *Token) int {
+	count := 0
+	for token := head; token != nil; token = token.Next {
+		count++
+	}
+	return count
 }
 
 func TestScannerCollectsSpacesAndNewlinesButSkipsComments(t *testing.T) {

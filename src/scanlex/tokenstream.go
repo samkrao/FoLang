@@ -101,13 +101,10 @@ func (lexer *lexer) emitUnknown(length, lines, endColumn int) Token {
 // TokenStream provides lazy parser-style lookahead over source text. UNKNOWN
 // tokens pass through unchanged, including their original lexeme.
 type TokenStream struct {
-	lexer        *lexer
-	rawBuffer    []Token
-	buffer       []Token
-	history      []Token
-	eof          Token
-	rawExhausted bool
-	exhausted    bool
+	lexer      *lexer
+	foldBuffer []Token
+	head       *Token
+	current    *Token
 }
 
 // NewTokenStream creates the internal lexer and its lazy parser-facing buffer.
@@ -116,147 +113,205 @@ type TokenStream struct {
 func NewTokenStream(source []byte, fn string, operators OperatorLookup) *TokenStream {
 	lexer := newLexer(source, fn)
 	lexer.operators = operators
-	return &TokenStream{
-		lexer: lexer,
-		eof:   Token{Kind: EOF, SubKind: NA, Value: "EOF"},
+	return &TokenStream{lexer: lexer}
+}
+
+// Current returns the next parser-visible token without consuming it. The
+// first call lazily folds and links the first token.
+func (stream *TokenStream) Current() *Token {
+	if stream == nil {
+		return nil
 	}
+	if stream.current != nil {
+		return stream.current
+	}
+	if stream.head != nil {
+		stream.current = stream.head
+		return stream.current
+	}
+
+	node := stream.nextFoldedNode()
+	stream.head = node
+	stream.current = node
+	return node
 }
 
 // Peek returns the token n positions ahead without consuming it. Peek(0) is
-// the next token. A negative lookahead is a programmer error and panics.
-func (stream *TokenStream) Peek(n int) Token {
+// Current(). A negative lookahead is a programmer error and panics.
+func (stream *TokenStream) Peek(n int) *Token {
 	if n < 0 {
 		panic("scanlex.TokenStream.Peek: negative lookahead")
 	}
-	stream.ensure(n + 1)
-	if n < len(stream.buffer) {
-		return stream.buffer[n]
+
+	node := stream.Current()
+	for i := 0; i < n && node != nil; i++ {
+		if node.Kind == EOF {
+			return node
+		}
+		node = stream.ensureNext(node)
 	}
-	return stream.eof
+	return node
 }
 
 // AtEOF reports whether EOF is the next parser-facing token. It may scan and
 // buffer the next token, but it never consumes it or changes token history.
 func (stream *TokenStream) AtEOF() bool {
-	return stream.Peek(0).Kind == EOF
+	token := stream.Current()
+	return token == nil || token.Kind == EOF
 }
 
-// Next returns and consumes the next token.
-func (stream *TokenStream) Next() Token {
-	stream.ensure(1)
-	if len(stream.buffer) == 0 {
-		return stream.eof
+// Next returns and consumes Current(). The token remains in both linked views,
+// so it is available through Previous. EOF is stable and is never advanced.
+func (stream *TokenStream) Next() *Token {
+	token := stream.Current()
+	if token == nil || token.Kind == EOF {
+		return token
 	}
 
-	token := stream.buffer[0]
-	stream.history = append(stream.history, token)
-	stream.buffer[0] = Token{}
-	stream.buffer = stream.buffer[1:]
-	if len(stream.buffer) == 0 {
-		stream.buffer = nil
+	if token.State == TokenPending {
+		token.State = TokenProcessed
 	}
+	stream.current = stream.ensureNext(token)
 	return token
 }
 
-// NextWH returns and consumes the next token without recording it in history.
-func (stream *TokenStream) NextWH() Token {
-	stream.ensure(1)
-	if len(stream.buffer) == 0 {
-		return stream.eof
-	}
-
-	token := stream.buffer[0]
-	stream.buffer[0] = Token{}
-	stream.buffer = stream.buffer[1:]
-	if len(stream.buffer) == 0 {
-		stream.buffer = nil
-	}
-	return token
+// NextWH discards Current() from the parser-visible chain. It is retained in
+// the immutable RawPrev/RawNext chain. The name is kept for parser call sites
+// that intentionally consume a token without retaining it in parser history.
+func (stream *TokenStream) NextWH() *Token {
+	return stream.DiscardCurrent()
 }
 
-// Previous returns a previously consumed token without changing the stream.
-// Previous(1) is the most recently consumed token, Previous(2) is the token
-// consumed before that, and so on. The result is false when the requested
-// history does not exist. A non-positive lookbehind is a programmer error.
-func (stream *TokenStream) Previous(n int) (Token, bool) {
+// DiscardCurrent unlinks Current() from the parser-visible chain and advances
+// to its successor. Raw links are never changed, and EOF is never discarded.
+func (stream *TokenStream) DiscardCurrent() *Token {
+	discarded := stream.Current()
+	if discarded == nil || discarded.Kind == EOF {
+		return discarded
+	}
+
+	next := stream.ensureNext(discarded)
+	previous := discarded.Prev
+	if previous == nil {
+		stream.head = next
+	} else {
+		previous.Next = next
+	}
+	if next != nil {
+		next.Prev = previous
+	}
+
+	discarded.Prev = nil
+	discarded.Next = nil
+	discarded.State = TokenDiscarded
+	stream.current = next
+	return discarded
+}
+
+// Previous returns a parser-visible token before Current() without moving the
+// cursor. Previous(1) is the most recently consumed retained token.
+func (stream *TokenStream) Previous(n int) (*Token, bool) {
 	if n <= 0 {
 		panic("scanlex.TokenStream.Previous: lookbehind must be positive")
 	}
 
-	index := len(stream.history) - n
-	if index < 0 {
-		return Token{}, false
-	}
-	return stream.history[index], true
-}
-
-// ensure lazily scans until count tokens are buffered or EOF is reached.
-// Callers request parser-facing counts: Next requests one and Peek(n) requests
-// n+1 because Peek(0) addresses the first buffered token.
-func (stream *TokenStream) ensure(count int) {
-	if count <= len(stream.buffer) || stream.exhausted {
-		return
-	}
-
-	if stream.lexer == nil {
-		stream.exhausted = true
-		return
-	}
-
-	for len(stream.buffer) < count {
-		token := foldTokens(stream)
-		if token.Kind == EOF {
-			stream.eof = token
-			stream.exhausted = true
-			break
+	node := stream.Current()
+	for i := 0; i < n; i++ {
+		if node == nil || node.Prev == nil {
+			return nil, false
 		}
-		stream.buffer = append(stream.buffer, token)
+		node = node.Prev
 	}
+	return node, true
 }
 
-// ensureRaw buffers scanner tokens only for folding lookahead. These tokens are
-// never exposed directly through Peek, Next, or Previous.
+// MovePrevious moves Current() backward through the parser-visible chain.
+func (stream *TokenStream) MovePrevious() (*Token, bool) {
+	previous, ok := stream.Previous(1)
+	if !ok {
+		return nil, false
+	}
+	stream.current = previous
+	return previous, true
+}
+
+func (stream *TokenStream) nextFoldedNode() *Token {
+	token := foldTokens(stream)
+	return &token
+}
+
+// ensureNext returns the parser-visible successor of node, lazily generating
+// and linking one final folded token when node is currently the list tail.
+func (stream *TokenStream) ensureNext(node *Token) *Token {
+	if node == nil || node.Kind == EOF {
+		return node
+	}
+	if node.Next != nil {
+		return node.Next
+	}
+
+	next := stream.nextFoldedNode()
+	node.Next = next
+	next.Prev = node
+
+	// Parser discards never change raw links. Usually node is also the raw tail;
+	// walking to the raw tail keeps appending correct after prior discards.
+	rawTail := node
+	for rawTail.RawNext != nil {
+		rawTail = rawTail.RawNext
+	}
+	rawTail.RawNext = next
+	next.RawPrev = rawTail
+	return next
+}
+
+// ensureRaw buffers scanner tokens only for folding lookahead. The buffer is
+// temporary and is not either of the linked parser-facing token views.
 func (stream *TokenStream) ensureRaw(count int) {
-	if count <= len(stream.rawBuffer) || stream.rawExhausted {
+	if count <= len(stream.foldBuffer) {
 		return
 	}
 	if stream.lexer == nil {
-		stream.rawExhausted = true
 		return
 	}
 
-	for len(stream.rawBuffer) < count {
+	for len(stream.foldBuffer) < count {
 		token := stream.lexer.nextToken()
 		if token.Kind == EOF {
-			stream.eof = token
-			stream.rawExhausted = true
 			break
 		}
-		stream.rawBuffer = append(stream.rawBuffer, token)
+		stream.foldBuffer = append(stream.foldBuffer, token)
 	}
 }
 
 func (stream *TokenStream) peekRaw(n int) Token {
 	stream.ensureRaw(n + 1)
-	if n < len(stream.rawBuffer) {
-		return stream.rawBuffer[n]
+	if n < len(stream.foldBuffer) {
+		return stream.foldBuffer[n]
 	}
-	return stream.eof
+	return stream.rawEOF()
 }
 
 func (stream *TokenStream) nextRaw() Token {
 	stream.ensureRaw(1)
-	if len(stream.rawBuffer) == 0 {
-		return stream.eof
+	if len(stream.foldBuffer) == 0 {
+		return stream.rawEOF()
 	}
 
-	token := stream.rawBuffer[0]
-	stream.rawBuffer[0] = Token{}
-	stream.rawBuffer = stream.rawBuffer[1:]
-	if len(stream.rawBuffer) == 0 {
-		stream.rawBuffer = nil
+	token := stream.foldBuffer[0]
+	stream.foldBuffer[0] = Token{}
+	stream.foldBuffer = stream.foldBuffer[1:]
+	if len(stream.foldBuffer) == 0 {
+		stream.foldBuffer = nil
 	}
 	return token
+}
+
+func (stream *TokenStream) rawEOF() Token {
+	if stream == nil || stream.lexer == nil {
+		return Token{Kind: EOF, SubKind: NA, Value: "EOF"}
+	}
+	return stream.lexer.nextToken()
 }
 
 func (stream *TokenStream) foldDotted(first Token) (Token, string) {
@@ -271,7 +326,7 @@ func (stream *TokenStream) foldDotted(first Token) (Token, string) {
 			(segment.Kind != IDENTIFIER && segment.Kind != KEYWORD) || !tokensAdjacent(dot, segment) {
 			// rawStartsDottedSegment guarantees this shape; retain a defensive
 			// fallback without discarding an unexpected scanner token.
-			stream.rawBuffer = append([]Token{dot, segment}, stream.rawBuffer...)
+			stream.foldBuffer = append([]Token{dot, segment}, stream.foldBuffer...)
 			break
 		}
 		value.WriteString(dot.Value)

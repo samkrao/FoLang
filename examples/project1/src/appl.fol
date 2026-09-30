@@ -1,3 +1,7 @@
+@co.pdap.threadpool(poolsize=10)
+
+@co.ddap.import(package="abc", as="abc")
+
 myPointer co.type = co.int->(****);
 
 myRef co.type = co.int->(&&);

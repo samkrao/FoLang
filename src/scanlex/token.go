@@ -8,6 +8,15 @@ import (
 	"github.com/samkrao/fo-lang/src/helpers"
 )
 
+type TokenState uint8
+
+const (
+	TokenPending TokenState = iota
+	TokenProcessed
+	TokenInvalid
+	TokenDiscarded
+)
+
 // Token represents a single lexical token with its kind, string value, and source positions.
 type Token struct {
 	Kind     TokenKind
@@ -21,6 +30,12 @@ type Token struct {
 	// structural uses of the same spelling remain exempt (DECISION-LEX-010).
 	BoundaryBefore bool
 	BoundaryAfter  bool
+	Next           *Token
+	Prev           *Token
+	RawPrev        *Token
+	RawNext        *Token
+	Message        string
+	State          TokenState
 }
 
 // Println prints the quoted token value, kind, subkind, and position range to
@@ -41,6 +56,15 @@ func (tk Token) IsOneOfMany(expectedTokens ...TokenKind) bool {
 	}
 
 	return false
+}
+
+func NewInvalidToken(tok *Token, msg string) *Token {
+	if tok == nil {
+		return nil
+	}
+	tok.Message = msg
+	tok.State = TokenInvalid
+	return tok
 }
 
 // NewUniqueToken creates a new Token with the given kind, value, and position range.
