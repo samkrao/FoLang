@@ -30,12 +30,15 @@ type Token struct {
 	// structural uses of the same spelling remain exempt (DECISION-LEX-010).
 	BoundaryBefore bool
 	BoundaryAfter  bool
-	Next           *Token
-	Prev           *Token
-	RawPrev        *Token
-	RawNext        *Token
-	Message        string
-	State          TokenState
+	// RawPrev and RawNext preserve the immutable sequence of folded FoLang
+	// tokens. Prev and Next initially name the same neighbours; only the parser
+	// links change when the parser discards a token.
+	RawPrev *Token
+	RawNext *Token
+	Prev    *Token
+	Next    *Token
+	Message string
+	State   TokenState
 }
 
 // Println prints the quoted token value, kind, subkind, and position range to

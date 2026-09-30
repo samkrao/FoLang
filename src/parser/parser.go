@@ -80,14 +80,14 @@ func (parser Parser) ignoreLB(tok *scanlex.Token) bool {
 
 func (parser Parser) nextWOS() *scanlex.Token {
 	for parser.Stream.Peek(0).Kind == scanlex.SPACE {
-		parser.Stream.NextWH()
+		parser.Stream.DiscardCurrent()
 	}
 	return parser.Stream.Next()
 }
 
 func (parser Parser) nextWOLB() *scanlex.Token {
 	for parser.Stream.Peek(0).Kind == scanlex.NEWLINE {
-		parser.Stream.NextWH()
+		parser.Stream.DiscardCurrent()
 	}
 	return parser.Stream.Next()
 }
@@ -98,7 +98,7 @@ func (parser Parser) nextWOSPLB() *scanlex.Token {
 		if tok.Kind != scanlex.SPACE && tok.Kind != scanlex.NEWLINE {
 			return parser.Stream.Next()
 		}
-		parser.Stream.NextWH()
+		parser.Stream.DiscardCurrent()
 	}
 }
 

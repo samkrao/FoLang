@@ -136,6 +136,16 @@ func (stream *TokenStream) Current() *Token {
 	return node
 }
 
+// RawFirst returns the first folded FoLang token in the immutable source view.
+// Parser discards do not affect this traversal root.
+func (stream *TokenStream) RawFirst() *Token {
+	node := stream.Current()
+	for node != nil && node.RawPrev != nil {
+		node = node.RawPrev
+	}
+	return node
+}
+
 // Peek returns the token n positions ahead without consuming it. Peek(0) is
 // Current(). A negative lookahead is a programmer error and panics.
 func (stream *TokenStream) Peek(n int) *Token {
@@ -153,8 +163,8 @@ func (stream *TokenStream) Peek(n int) *Token {
 	return node
 }
 
-// AtEOF reports whether EOF is the next parser-facing token. It may scan and
-// buffer the next token, but it never consumes it or changes token history.
+// AtEOF reports whether EOF is the current parser-facing token. It may lazily
+// fold the first token, but it never advances the parser cursor.
 func (stream *TokenStream) AtEOF() bool {
 	token := stream.Current()
 	return token == nil || token.Kind == EOF
@@ -173,13 +183,6 @@ func (stream *TokenStream) Next() *Token {
 	}
 	stream.current = stream.ensureNext(token)
 	return token
-}
-
-// NextWH discards Current() from the parser-visible chain. It is retained in
-// the immutable RawPrev/RawNext chain. The name is kept for parser call sites
-// that intentionally consume a token without retaining it in parser history.
-func (stream *TokenStream) NextWH() *Token {
-	return stream.DiscardCurrent()
 }
 
 // DiscardCurrent unlinks Current() from the parser-visible chain and advances

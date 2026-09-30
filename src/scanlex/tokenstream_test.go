@@ -37,6 +37,34 @@ func TestTokenStreamPeekLinksOnlyRequestedLookahead(t *testing.T) {
 	}
 }
 
+func TestFoldedRawAndParserLinksInitiallyMatch(t *testing.T) {
+	stream := NewTokenStream([]byte("alpha beta"), "test.fol", emptyTestOperators)
+	stream.Peek(3) // alpha, space, beta, EOF
+
+	for token := stream.RawFirst(); token != nil; token = token.RawNext {
+		if token.Next != token.RawNext || token.Prev != token.RawPrev {
+			t.Fatalf("token %q has different raw and parser links before any discard", token.Value)
+		}
+		if token.RawNext != nil && token.RawNext.RawPrev != token {
+			t.Fatalf("raw links are not bidirectional after token %q", token.Value)
+		}
+	}
+}
+
+func TestFoldedTokenUsesFirstStartAndLastEnd(t *testing.T) {
+	const source = "co.out.println()"
+	stream := NewTokenStream([]byte(source), "test.fol", emptyTestOperators)
+	token := stream.Peek(0)
+
+	if token.Value != "co.out.println" || token.SubKind != METHOD {
+		t.Fatalf("folded token = (%q, %v), want co.out.println/METHOD", token.Value, token.SubKind)
+	}
+	if token.StartPos == nil || token.EndPos == nil ||
+		token.StartPos.Idx != 0 || token.EndPos.Idx != len("co.out.println") {
+		t.Fatalf("folded span = %#v..%#v, want 0..%d", token.StartPos, token.EndPos, len("co.out.println"))
+	}
+}
+
 func TestTokenStreamNextAdvancesLinkedCurrent(t *testing.T) {
 	stream := NewTokenStream([]byte("alpha beta"), "test.fol", emptyTestOperators)
 
@@ -199,8 +227,8 @@ func TestTokenStreamDiscardKeepsRawLinksAndBypassesParserLinks(t *testing.T) {
 	if space.Kind != SPACE {
 		t.Fatalf("Current() kind = %v, want SPACE", space.Kind)
 	}
-	if discarded := stream.NextWH(); discarded != space {
-		t.Fatal("NextWH() did not return the discarded current token")
+	if discarded := stream.DiscardCurrent(); discarded != space {
+		t.Fatal("DiscardCurrent() did not return the discarded current token")
 	}
 	beta := stream.Current()
 
