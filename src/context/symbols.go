@@ -1372,6 +1372,7 @@ type MetaDataValue struct {
 	Key         string
 	Value       any // later this can become a narrower metadata-value interface
 	SourceIndex int
+	OnlyValue   bool
 }
 
 // @co.
