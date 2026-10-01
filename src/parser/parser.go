@@ -78,6 +78,17 @@ func (parser Parser) ignoreLB(tok *scanlex.Token) bool {
 	return false
 }
 
+func (parser Parser) LBorStmtEnd(tok *scanlex.Token) (bool, bool) {
+
+	if tok.Kind == scanlex.CLOSE_CURLY || tok.Kind == scanlex.SEMI_COLON || tok.Kind == scanlex.COMMA {
+		return true, false
+
+	} else if tok.Kind == scanlex.NEWLINE {
+		return false, true
+	}
+	return false, false
+}
+
 func (parser Parser) nextWOS() *scanlex.Token {
 	for parser.Stream.Peek(0).Kind == scanlex.SPACE {
 		parser.Stream.DiscardCurrent()
