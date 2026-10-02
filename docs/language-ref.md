@@ -405,7 +405,7 @@ FoLang's compiler ships with all language features compiled in but **native capa
 |---|---|---|
 | `application` | Ordinary FoLang language/application capabilities, including macros, templates, concurrency/control abstractions, `co.http`, core declarations such as `co.List`, `co.encoding`, `co.crypto`, etc. | ✅ enabled |
 | `dynamicvmrt` | application capabilities plus the defined dynamic-runtime / `co.meta` facilities | explicit source capability domain; toolchain policy may restrict availability |
-| `native` | Raw pointers/references/addresses, pointer arithmetic, `@co.dap.native`, `co.native`, `co.sys.unsafe`, MMIO, heap allocators, low-level platform/runtime implementation, `co.sys.ffi`, extern declarations/types, foreign symbols, calling conventions, linkage, C/native ABI work, and ABI-compatible `cstruct` values | 🔒 disabled by default — requires install-time configuration |
+| `native` | Raw pointers/references/addresses, pointer arithmetic, `@co.dap.native`, `co.native`, `co.sys.unsafe`, MMIO, heap allocators, low-level platform/runtime implementation, `co.sys.ffi`, extern declarations/types, foreign symbols, calling conventions, linkage, C/native ABI work, and native-only `co.c*` ABI scalar/aggregate values including `co.cstruct` | 🔒 disabled by default — requires install-time configuration |
 
 `packaged` is an exposure model using application capabilities, not a separate privileged capability domain.
 
@@ -821,6 +821,64 @@ Component rules include:
 1. a standardized component kind has its designated project location;
 2. component exports are checked for use/liveness according to the component rules;
 3. peer components do not directly import/reference each other; interaction is mediated through the application/package/library surfaces permitted by the dependency model.
+
+#### Native Libraries and Components
+
+A standalone library whose capability domain is `native`, and the project-local native component, keep their **client-visible surface in ordinary FoLang types**. Native ABI representation types belong to the native implementation domain and must not appear as parameter, result, field, or otherwise representation-reachable types in the API exposed to ordinary application/package/library code.
+
+The public surface therefore declares ordinary FoLang contracts, for example:
+
+```folang
+@co.dap.cabi(type = native.someType)
+someType co.struct = {
+    someString co.string;
+    someInt    co.int;
+}
+
+process(value someType)->(co.string);
+```
+
+The `type` field of `@co.dap.cabi` names the qualified native ABI representation used by that surface type. The target is resolved inside the declaring native library/component according to the ordinary qualification/import rules. The FoLang surface type name need not equal the internal ABI type name because the annotation supplies the association explicitly. For aggregate mappings, corresponding fields are matched by member name and are marshalled recursively according to their declared surface and ABI types.
+
+The native implementation may define the corresponding ABI representation with native-only types, for example:
+
+```folang
+// internal package exposed to this native surface as `native`
+CStringABI co.type = co.cchar->([]);
+
+someType co.cstruct = {
+    someString CStringABI;
+    someInt    co.cint;
+}
+```
+
+`co.cstruct`, `co.cint`, `co.cfloat`, `co.cchar`, and other `co.c*` ABI types are native-domain representation types. Ordinary application code, application-capability libraries/components, and other non-native source cannot declare or directly use them. A native library/component may use them internally, but its public surface exposes ordinary FoLang types.
+
+The standard native boundary defines direct marshalling for these language-defined primitive correspondences:
+
+| FoLang surface type | Native ABI representation |
+|---|---|
+| `co.int` | `co.cint` |
+| `co.float` | `co.cfloat` |
+| `co.string` | `co.cchar->([])` |
+
+The `co.string` mapping produces a null-terminated UTF-8 native character sequence. Aggregate conversion is recursive: an ordinary `co.struct` mapped by `@co.dap.cabi` is converted field-by-field into the associated `co.cstruct`, and a native result is converted back into the corresponding ordinary FoLang representation before it crosses the surface boundary. The internal `co.cstruct` remains authoritative for native layout, member ordering, alignment, padding, and other ABI representation requirements; the ordinary surface `co.struct` does not acquire C layout or native value/pointer semantics.
+
+A call through a native surface has the following required lifecycle:
+
+```text
+ordinary FoLang arguments
+    -> marshal to temporary native ABI values
+    -> execute the native implementation
+    -> obtain native ABI results
+    -> unmarshal results completely to ordinary FoLang values
+    -> release all temporary native ABI values/resources created for the invocation
+    -> return ordinary FoLang values to the caller
+```
+
+Native ABI values created by automatic marshalling are invocation-temporary. They remain valid only as required for that native invocation and may not be retained or escape through the public surface. Cleanup occurs after result unmarshalling has completed and immediately before control returns across the native surface boundary. Consequently, no automatically marshalled `co.c*` value, pointer, buffer, aggregate, or other native representation becomes observable as an ordinary FoLang result.
+
+The surface file is declarative: it exposes the ordinary FoLang API and its ABI mapping metadata. The compiler/backend is responsible for implementing the required marshalling, unmarshalling, cleanup, and ABI lowering. Different backends may implement that machinery differently, but the boundary behavior above is normative.
 
 #### Operator Components
 
@@ -1359,18 +1417,20 @@ FoLang does not permit ordinary inner, nested, or anonymous named type declarati
 
 #### CStructs
 
-```folang
+`co.cstruct` is a native-only C-ABI value aggregate. It is valid only inside a `native` library/component capability domain and uses native ABI representation types rather than ordinary FoLang object types for its ABI-facing members.
 
+```folang
 // Rect.fol
 
 _ co.cstruct = {
-    origin Point;
-    width  co.int;
-    height co.int;
+    x      co.cint;
+    y      co.cint;
+    width  co.cint;
+    height co.cint;
 }
-
 ```
-`co.cstruct` is a C-like value type: it is passed by value, has a simple memory layout, and is safe to cross supported ABI boundaries.
+
+A `co.cstruct` is passed/laid out according to the selected native ABI contract. Its representation semantics are distinct from ordinary `co.struct`; it is not a public application-level data model and must not be exposed through a native library/component surface to non-native clients. Public native surfaces use ordinary FoLang types and, where an aggregate representation association is required, `@co.dap.cabi(type = ...)` maps the surface type to its internal `co.cstruct`.
 
 **Worth noting:** as package names are derived from directory structure, a top-level type declared with `_` derives its name from the source filename. The resulting type name is canonical and case-insensitive according to the filename-derived declaration rules.
 
@@ -4310,6 +4370,8 @@ These facilities intentionally share one capability boundary. A foreign call may
 
 The frontend preserves native and foreign-interoperability declarations and their metadata through the backend interchange contract. The reference backend demonstrates one implementation of that contract. A conforming third-party backend is not required to reproduce the reference backend's internal native-code lowering, ABI lowering, instruction representation, allocation strategy, marshalling implementation, or code-generation mechanism, but the externally observable behavior required by the specification must be preserved.
 
+Calls exposed from native libraries/components to ordinary FoLang clients follow the surface marshalling and lifetime rules defined in [Native Libraries and Components](#native-libraries-and-components): public signatures use ordinary FoLang types, native `co.c*` representations remain internal, results are fully unmarshalled before return, and invocation-temporary native representations are released before control crosses back to the caller.
+
 #### Native Functions
 // native.unit.fol
 ```folang
@@ -4370,7 +4432,7 @@ The entries in this language-defined inventory form the current built-in metadat
 |---|---|---|
 |`PRAGMA`|"@co.pdap.threadpool","@co.pdap.schedularpool"||
 |`DIRECTIVE`|"@co.ddap.import", "@co.ddap.dynamicruntime", "@co.ddap.use",  "@co.ddap.alias","@co.ddap.dynamicdispatch","@co.ddap.overload"|`@co.ddap.overload` is different from `@co.dap.overload` it has takes whether `paramtypes` or `paramandreturntypes` as attributevalue of `strategy`|
-|`ANNOTATION`| "@co.dap.extend","@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.native", "@co.dap.class", "@co.dap.static","@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override","@co.dap.implement", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.compose", "@co.dap.guard","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.implementation","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize","@co.dap.scope","@co.dap.symbol","@co.dap.with"|//mop => meta object programming|
+|`ANNOTATION`| "@co.dap.extend","@co.dap.template", "@co.dap.macro","@co.dap.operator", "@co.dap.annotation", "@co.dap.library", "@co.dap.native", "@co.dap.cabi", "@co.dap.class", "@co.dap.static","@co.dap.object", "@co.dap.inline","@co.dap.ctfe", "@co.dap.friend", "@co.dap.sealed", "@co.dap.extension","@co.dap.override","@co.dap.implement", "@co.dap.virtual", "@co.dap.abstract", "@co.dap.delegate", "@co.dap.typeclass","@co.dap.matcher", "@co.dap.constructor", "@co.dap.oops","@co.dap.extends","@co.dap.hokrlt", "@co.dap.indexer", "@co.dap.generic", "@co.dap.comptime", "@co.dap.typefromvalue", "@co.dap.local", "@co.dap.private","@co.dap.public","@co.dap.compose", "@co.dap.guard","@co.dap.package","@co.dap.protected","@co.dap.internal","@co.dap.export","@co.dap.eager", "@co.dap.lazy", "@co.dap.packed", "@co.dap.declare","@co.dap.implementation","@co.dap.simd", "@co.dap.reflection", "@co.dap.mop","@co.dap.nested","@co.dap.inner","@co.dap.final","@co.dap.const","@co.dap.decorator","@co.dap.specialize","@co.dap.scope","@co.dap.symbol","@co.dap.with"|//mop => meta object programming|
 |`DECORATOR`|"@co.dap.before", "@co.dap.after","@co.dap.around", "@co.dap.effects", "@co.dap.onEffect", "@co.dap.defer","@co.dap.callable", "@co.dap.executionmodel"||
 
 ***
@@ -4399,6 +4461,8 @@ metadata field or nested metadata record is a syntax error.
 ```
 
 For `@co.dap.implementation`, `kind` classifies how a bodyless standard declaration is implemented and `operation` identifies the compiler-owned backend-neutral runtime operation. The `operation` value is resolved as a qualified operation symbol and preserved in `.folenc`/HIR; it is not target-language source text. The annotation is valid only on a declaration kind for which this specification permits a runtime-operation marker.
+
+For `@co.dap.cabi`, the required `type` field identifies the qualified native ABI representation associated with an ordinary FoLang surface type. The annotation is valid only on a permitted surface type declaration of a `native` library/component, and its target must resolve to an ABI representation permitted by the native-domain rules. The annotation establishes a marshalling association; it does not change the ordinary FoLang type into the native type and does not make the native representation part of the client-visible API.
 
 The reference intentionally contains no colon-bound `@co.*` metadata example;
 the normative metadata syntax above rejects such spellings.

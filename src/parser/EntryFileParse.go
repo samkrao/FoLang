@@ -10,41 +10,37 @@ import (
 
 func (parser Parser) parseEntry() ast.SET {
 
-	parser.collectPragmas()
+	parser.collectPragmasAndorDirevites()
 
+	parser.parseStatemtnsAndOrExpressions()
 	return ast.SourceFile{}
 }
 
-func (parser Parser) collectPragmas() ast.SET {
+func (parser Parser) collectPragmasAndorDirevites() ast.SET {
 
 	for !parser.Stream.AtEOF() {
-
-		if parser.Stream.Peek(0).Kind == scanlex.BUILT_INS_FOL && parser.Stream.Peek(0).SubKind == scanlex.DIRECTIVES {
+		tok := parser.Stream.Peek(0)
+		if tok.Kind == scanlex.BUILT_INS_FOL && tok.SubKind == scanlex.DIRECTIVES {
 			state := 0
 
 			metaData := symboltable.MetaDataApplication{}
-			tok := parser.Stream.Next()
-			if strings.HasPrefix(tok.Value, "@co.pdap") && (state == 0 || state == 1) {
+
+			if strings.HasPrefix(tok.Value, "@co.pdap") && (state == 0) {
 				metaData.Kind_ = symboltable.Pragma
 
 			} else if strings.HasPrefix(tok.Value, "@co.ddap") && (state == 0 || state == 1) {
 				metaData.Kind_ = symboltable.Directive
 				if state == 0 {
+
 					state = 1
 				}
-			} else if strings.HasPrefix(tok.Value, "@co.dap") || tok.Kind == scanlex.CUSTOM_ANNOT_DECOR && (state == 1 || state == 2) {
-				if parser.IsAnnotation(tok) {
-					metaData.Kind_ = symboltable.Annotation
-				} else {
-					metaData.Kind_ = symboltable.Decorator
-				}
-				if state == 1 {
-					state = 2
-				}
+
 			} else {
-				//error consume token but add to errors
+
+				break
 
 			}
+			parser.Stream.Next() // consume the directive token
 			parser.expect(scanlex.OPEN_PAREN, "Missing opening parenthesis after directive")
 			metaData.Attributes = parser.parseMetaData()
 			parser.expect(scanlex.CLOSE_PAREN, "Missing closing parenthesis after directive")
@@ -55,6 +51,36 @@ func (parser Parser) collectPragmas() ast.SET {
 		break
 	}
 	return ast.SourceFile{}
+}
+
+func (parser Parser) parseDecoratorAndorAnnotation() ast.SET {
+
+	for !parser.Stream.AtEOF() {
+		tok := parser.Stream.Peek(0)
+		if tok.Kind == scanlex.BUILT_INS_FOL && tok.SubKind == scanlex.DIRECTIVES {
+			metaData := symboltable.MetaDataApplication{}
+
+			if strings.HasPrefix(tok.Value, "@co.dap") || tok.Kind == scanlex.CUSTOM_ANNOT_DECOR {
+				if parser.IsAnnotation(tok) {
+					metaData.Kind_ = symboltable.Annotation
+				} else {
+					metaData.Kind_ = symboltable.Decorator
+				}
+
+				parser.Stream.Next() // consume the directive token
+				parser.expect(scanlex.OPEN_PAREN, "Missing opening parenthesis after directive")
+				metaData.Attributes = parser.parseMetaData()
+				parser.expect(scanlex.CLOSE_PAREN, "Missing closing parenthesis after directive")
+				parser.expect(scanlex.NEWLINE, "Missing newline after directive")
+				continue
+			} else {
+				// collect errors
+
+			}
+		} else {
+			break
+		}
+	}
 }
 
 func (parser Parser) parseMetaData() []symboltable.MetaDataValue {

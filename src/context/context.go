@@ -14,6 +14,7 @@ type PackageName string
 type SymbolName string
 type ImportedAlias string
 type ResolutionPolicy string
+type QualifiedName string
 
 const (
 	LexicalOrdered           ResolutionPolicy = "lexical_ordered"
@@ -50,6 +51,7 @@ type FolangSymbols struct {
 	SymbolsById    map[SymbolID]SymbolInfo
 	Operators      OperatorRegistry
 	BackendConf    BackendConfig
+	SystemSymbols  map[QualifiedName]SymbolID
 }
 
 type OperatorRegistry struct {
