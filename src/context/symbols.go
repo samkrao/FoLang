@@ -213,6 +213,10 @@ func (s PredefinedCollections) Kind() string {
 	return string(s.Kind_)
 }
 
+type TypeDef interface {
+	IsTypeDefintion() bool
+}
+
 // x co.type = co.int;
 type AliasType struct {
 	AbstractType
@@ -223,6 +227,10 @@ func (s AliasType) SymbolTypeKind() string {
 }
 
 func (s AliasType) IsType() bool {
+	return true
+}
+
+func (s AliasType) IsTypeDefintion() bool {
 	return true
 }
 
@@ -239,6 +247,10 @@ func (s NewType) IsType() bool {
 	return true
 }
 
+func (s NewType) IsTypeDefintion() bool {
+	return true
+}
+
 // x co.supertype = sompackage.Employee
 type SuperType struct {
 	AbstractType
@@ -249,6 +261,10 @@ func (s SuperType) SymbolTypeKind() string {
 }
 
 func (s SuperType) IsType() bool {
+	return true
+}
+
+func (s SuperType) IsTypeDefintion() bool {
 	return true
 }
 
@@ -265,6 +281,10 @@ func (s SubType) IsType() bool {
 	return true
 }
 
+func (s SubType) IsTypeDefintion() bool {
+	return true
+}
+
 // x co.opaqueType =  co.int
 type OpaqueType struct {
 	AbstractType
@@ -275,6 +295,10 @@ func (s OpaqueType) SymbolTypeKind() string {
 }
 
 func (s OpaqueType) IsType() bool {
+	return true
+}
+
+func (s OpaqueType) IsTypeDefintion() bool {
 	return true
 }
 
@@ -291,6 +315,10 @@ func (s ADTtype) IsType() bool {
 	return true
 }
 
+func (s ADTtype) IsTypeDefintion() bool {
+	return true
+}
+
 // someType co.predicateType = (co.type).where( candidate => candidate == co.int || candidate == co.string );
 type PredicateType struct {
 	AbstractType
@@ -301,6 +329,10 @@ func (s PredicateType) SymbolTypeKind() string {
 }
 
 func (s PredicateType) IsType() bool {
+	return true
+}
+
+func (s PredicateType) IsTypeDefintion() bool {
 	return true
 }
 
@@ -318,6 +350,10 @@ func (s AssociatedType) IsType() bool {
 	return true
 }
 
+func (s AssociatedType) IsTypeDefintion() bool {
+	return true
+}
+
 // Vector(n) co.type = co.dependentType( co.int->([n]) );
 type DependentType struct {
 	AbstractType
@@ -328,6 +364,10 @@ func (s DependentType) SymbolTypeKind() string {
 }
 
 func (s DependentType) IsType() bool {
+	return true
+}
+
+func (s DependentType) IsTypeDefintion() bool {
 	return true
 }
 
@@ -344,6 +384,10 @@ func (s RefinementType) IsType() bool {
 	return true
 }
 
+func (s RefinementType) IsTypeDefintion() bool {
+	return true
+}
+
 // x co.type = co.generic(T)
 type GenericType struct {
 	AbstractType
@@ -354,6 +398,10 @@ func (s GenericType) SymbolTypeKind() string {
 }
 
 func (s GenericType) IsType() bool {
+	return true
+}
+
+func (s GenericType) IsTypeDefintion() bool {
 	return true
 }
 
@@ -370,6 +418,10 @@ func (s Hokrltype) IsType() bool {
 	return true
 }
 
+func (s Hokrltype) IsTypeDefintion() bool {
+	return true
+}
+
 // co.shape
 type ShapeType struct {
 	AbstractType
@@ -380,6 +432,10 @@ func (s ShapeType) SymbolTypeKind() string {
 }
 
 func (s ShapeType) IsType() bool {
+	return true
+}
+
+func (s ShapeType) IsTypeDefintion() bool {
 	return true
 }
 
@@ -409,6 +465,10 @@ func (s KindType) IsType() bool {
 	return true
 }
 
+func (s KindType) IsTypeDefintion() bool {
+	return true
+}
+
 // x co.type=(co.int, co.int)->(co.bool,co.int)
 
 type FunctionType struct {
@@ -420,6 +480,10 @@ func (s FunctionType) SymbolTypeKind() string {
 }
 
 func (s FunctionType) IsType() bool {
+	return true
+}
+
+func (s FunctionType) IsTypeDefintion() bool {
 	return true
 }
 
@@ -437,6 +501,10 @@ func (s PathDependentType) IsType() bool {
 	return true
 }
 
+func (s PathDependentType) IsTypeDefintion() bool {
+	return true
+}
+
 // someDelegate co.delegate = (a co.int, b co.int)->(co.int, co.int);
 type DelegateType struct {
 	AbstractType
@@ -447,6 +515,10 @@ func (s DelegateType) SymbolTypeKind() string {
 }
 
 func (s DelegateType) IsType() bool {
+	return true
+}
+
+func (s DelegateType) IsTypeDefintion() bool {
 	return true
 }
 
@@ -463,6 +535,10 @@ func (s ParameterizedType) IsType() bool {
 	return true
 }
 
+func (s ParameterizedType) IsTypeDefintion() bool {
+	return true
+}
+
 // SelectedValue co.type = co.data(StringValue(co.string), BoolValue(co.bool));
 type DataType struct {
 	AbstractType
@@ -473,6 +549,10 @@ func (s DataType) SymbolTypeKind() string {
 }
 
 func (s DataType) IsType() bool {
+	return true
+}
+
+func (s DataType) IsTypeDefintion() bool {
 	return true
 }
 
@@ -489,6 +569,10 @@ func (s TagType) IsType() bool {
 	return true
 }
 
+func (s TagType) IsTypeDefintion() bool {
+	return true
+}
+
 // x co.type = co.polymorphic({U}, (U,U)->(U));
 // similar to saying forall(T).(T, T)->(T) in other languages
 type PolymorphicType struct {
@@ -499,6 +583,9 @@ func (s PolymorphicType) SymbolTypeKind() string {
 	return string(reflect.TypeOf(s).Name())
 }
 func (s PolymorphicType) IsType() bool {
+	return true
+}
+func (s PolymorphicType) IsTypeDefintion() bool {
 	return true
 }
 
@@ -512,6 +599,9 @@ func (s Impredicativetypes) SymbolTypeKind() string {
 	return string(reflect.TypeOf(s).Name())
 }
 func (s Impredicativetypes) IsType() bool {
+	return true
+}
+func (s Impredicativetypes) IsTypeDefintion() bool {
 	return true
 }
 
@@ -539,6 +629,9 @@ func (s ArrayType) SymbolTypeKind() string {
 func (s ArrayType) IsType() bool {
 	return true
 }
+func (s ArrayType) IsTypeDefintion() bool {
+	return true
+}
 func (s ArrayType) IsDerived() bool {
 	return true
 }
@@ -554,6 +647,9 @@ func (s PointerType) SymbolTypeKind() string {
 	return string(reflect.TypeOf(s).Name())
 }
 func (s PointerType) IsType() bool {
+	return true
+}
+func (s PointerType) IsTypeDefintion() bool {
 	return true
 }
 func (s PointerType) IsDerived() bool {
@@ -580,6 +676,10 @@ func (s ReferenceType) IsDerived() bool {
 	return true
 }
 
+func (s ReferenceType) IsTypeDefintion() bool {
+	return true
+}
+
 // x co.type = co.int(@);
 type AddressType struct {
 	AbstractType
@@ -589,6 +689,10 @@ func (s AddressType) SymbolTypeKind() string {
 	return string(reflect.TypeOf(s).Name())
 }
 func (s AddressType) IsType() bool {
+	return true
+}
+
+func (s AddressType) IsTypeDefintion() bool {
 	return true
 }
 
@@ -612,6 +716,10 @@ func (s WordType) IsDerived() bool {
 	return true
 }
 
+func (s WordType) IsTypeDefintion() bool {
+	return true
+}
+
 // x co.type = co.int->(..)
 type RangeType struct {
 	AbstractType
@@ -621,6 +729,9 @@ func (s RangeType) SymbolTypeKind() string {
 	return string(reflect.TypeOf(s).Name())
 }
 func (s RangeType) IsType() bool {
+	return true
+}
+func (s RangeType) IsTypeDefintion() bool {
 	return true
 }
 
@@ -644,6 +755,10 @@ func (s ThunkType) IsDerived() bool {
 	return true
 }
 
+func (s ThunkType) IsTypeDefintion() bool {
+	return true
+}
+
 // x co.type = co.int->(:);
 type SliceType struct {
 	AbstractType
@@ -657,6 +772,10 @@ func (s SliceType) IsType() bool {
 }
 
 func (s SliceType) IsDerived() bool {
+	return true
+}
+
+func (s SliceType) IsTypeDefintion() bool {
 	return true
 }
 
@@ -674,6 +793,10 @@ func (s GenericSpecializationType) IsType() bool {
 }
 
 func (s GenericSpecializationType) IsDerived() bool {
+	return true
+}
+
+func (s GenericSpecializationType) IsTypeDefintion() bool {
 	return true
 }
 
