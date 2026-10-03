@@ -84,15 +84,3 @@ func newUniqueToken(kind TokenKind, subKind SubKind, value string, startPos *hel
 func (token Token) Debug() {
 	fmt.Printf("%s => (%s)\n", token.Value, TokenKindString(token.Kind))
 }
-
-var Special_methods []string = []string{
-	"@@new",
-	"@@init",
-}
-
-// Reserved_lu maps reserved language keywords to their TokenKind.
-var Reserved_lu map[string]TokenKind = map[string]TokenKind{
-	"co":   KEYWORD, // holds everything
-	"this": KEYWORD, // refers this/self
-	"fΦλ":  KEYWORD, // fo-lang reserved word
-}
