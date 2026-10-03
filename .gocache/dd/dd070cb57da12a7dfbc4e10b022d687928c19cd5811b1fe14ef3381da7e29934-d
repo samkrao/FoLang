@@ -1,7 +1,0 @@
-./debug_trace.go
-./operators.go
-./scanner-helper.go
-./scanner.go
-./token.go
-./tokenizer.go
-./unsupported_literals.go

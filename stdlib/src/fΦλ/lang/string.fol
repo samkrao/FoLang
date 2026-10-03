@@ -1,5 +1,15 @@
 @co.dap.implementation(
     kind = co.dap.implementationKind.runtime,
     operation = co.runtime.operation.lang.string
+    symbolKind=type,
+    typeCategory=object,
+    availableIn={
+        application=true
+        library=[packaged,dynamicvmrt,application],
+        component=[operators,packaged,dynamicvmrt,application]
+        },
+    package=fΦλ.lang,
+  
 )
-string co.lang.struct;
+
+_ fΦλ.provided;
