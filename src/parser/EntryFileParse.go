@@ -81,6 +81,7 @@ func (parser Parser) parseDecoratorAndorAnnotation() ast.SET {
 			break
 		}
 	}
+	return ast.SourceFile{}
 }
 
 func (parser Parser) parseMetaData() []symboltable.MetaDataValue {

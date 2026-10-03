@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/samkrao/fo-lang/src/builtins"
 	"github.com/samkrao/fo-lang/src/helpers"
 )
 
@@ -227,7 +228,7 @@ func (lex *lexer) scanBuiltin(src string) (scanned, bool) {
 			// the parser as a bare "@@" plus an ordinary identifier.
 			n := 2 + identifierLength(src[2:])
 			if n > 2 {
-				if slices.Contains(Special_methods, src[:n]) {
+				if slices.Contains(builtins.Special_methods, src[:n]) {
 					return emit(BUILT_INS_FOL, SPECIAL_METHOD, n), true
 				}
 				return scanned{action: actionUnknown, length: n}, true
@@ -895,8 +896,8 @@ func (lex *lexer) emitIdentifier(lexeme string, start, end *helpers.Position) To
 		kind = UNKNOWN
 
 	}
-	if k, ok := Reserved_lu[lexeme]; ok {
-		kind = k
+	if slices.Contains(builtins.Reserved_lu, lexeme) {
+		kind = KEYWORD
 
 	}
 	return newUniqueToken(kind, subKind, lexeme, start.Copy(), end)
