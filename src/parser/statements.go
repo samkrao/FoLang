@@ -2,7 +2,7 @@ package parser
 
 import (
 	"github.com/samkrao/fo-lang/src/ast"
-	symboltable "github.com/samkrao/fo-lang/src/context"
+	"github.com/samkrao/fo-lang/src/builtins"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -11,24 +11,21 @@ func (parser Parser) parseStatemtnsAndOrExpressions() ast.SET {
 
 		parser.parseDecoratorAndorAnnotation()
 		kind := parser.Stream.Peek(1)
-		if kind.Kind == scanlex.BUILT_INS_FOL && kind.SubKind == scanlex.STATEMENT_EXPR {
+		if kind.Kind == scanlex.BUILT_INS_FOL {
 
-			kindTok := parser.Stream.Peek(1)
-			if symb, ok := parser.Symbols.SystemSymbols[symboltable.QualifiedName(kindTok.Value)]; !ok {
-				kind_ := parser.Symbols.SymbolsById[symb]
-				type_ := kind_.SymbolTypeKind()
-				if type_ == "BDTtype" {
-					parser.parseVariableDeclaration()
-				} else if _, ok := kind_.(symboltable.IKindSymbol); ok {
-					// key does not exist
-				} else if _, ok := kind_.(symboltable.TypeDef); ok {
-					parser.parseTypeDefinitions()
-
-				}
+			if _, ok := builtins.BuilinTypes[kind.Value]; ok {
+				parser.parseVariableDeclaration()
+				continue
+			} else if _, ok := builtins.BuiltinKinds[kind.Value]; ok {
+				parser.ParserDefinitions()
+				continue
+			} else if _, ok := builtins.TypeForms[kind.Value]; ok {
+				parser.parseTypeDefinitions()
+				continue
 			}
 		} else if kind.Kind == scanlex.COMPOSITE_IDENTIFIER {
 			parser.parseVariableDeclaration()
-
+			continue
 		}
 		parser.parseExpressions()
 
