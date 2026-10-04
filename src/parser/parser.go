@@ -15,6 +15,8 @@ type Parser struct {
 	ContextID     symboltable.ContextID
 	SymoblTableID symboltable.SymbolTableID
 	Symbols       *symboltable.FolangSymbols
+	NewScope      bool
+	NewContext    bool
 }
 
 func (parser Parser) Parse() ast.SET {
@@ -110,6 +112,63 @@ func (parser Parser) nextWOSPLB() *scanlex.Token {
 			return parser.Stream.Next()
 		}
 		parser.Stream.DiscardCurrent()
+	}
+}
+
+func (parser Parser) PeekWOS(n int) *scanlex.Token {
+	if n < 0 {
+		panic("parser.Parser.PeekWOS: negative lookahead")
+	}
+
+	for lookahead := 0; ; lookahead++ {
+		tok := parser.Stream.Peek(lookahead)
+		if tok == nil || tok.Kind == scanlex.EOF {
+			return tok
+		}
+		if tok.Kind != scanlex.SPACE {
+			if n == 0 {
+				return tok
+			}
+			n--
+		}
+	}
+}
+
+func (parser Parser) PeekWOLB(n int) *scanlex.Token {
+	if n < 0 {
+		panic("parser.Parser.PeekWOLB: negative lookahead")
+	}
+
+	for lookahead := 0; ; lookahead++ {
+		tok := parser.Stream.Peek(lookahead)
+		if tok == nil || tok.Kind == scanlex.EOF {
+			return tok
+		}
+		if tok.Kind != scanlex.NEWLINE {
+			if n == 0 {
+				return tok
+			}
+			n--
+		}
+	}
+}
+
+func (parser Parser) PeekWOSLB(n int) *scanlex.Token {
+	if n < 0 {
+		panic("parser.Parser.PeekWOSLB: negative lookahead")
+	}
+
+	for lookahead := 0; ; lookahead++ {
+		tok := parser.Stream.Peek(lookahead)
+		if tok == nil || tok.Kind == scanlex.EOF {
+			return tok
+		}
+		if tok.Kind != scanlex.SPACE && tok.Kind != scanlex.NEWLINE {
+			if n == 0 {
+				return tok
+			}
+			n--
+		}
 	}
 }
 

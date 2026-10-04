@@ -10,7 +10,7 @@ func (parser Parser) parseStatemtnsAndOrExpressions() ast.SET {
 	for !parser.Stream.AtEOF() {
 
 		parser.parseDecoratorAndorAnnotation()
-		kind := parser.Stream.Peek(1)
+		kind := parser.Peek(1)
 		if kind.Kind == scanlex.BUILT_INS_FOL {
 
 			if _, ok := builtins.BuilinTypes[kind.Value]; ok {
@@ -26,9 +26,11 @@ func (parser Parser) parseStatemtnsAndOrExpressions() ast.SET {
 		} else if kind.Kind == scanlex.COMPOSITE_IDENTIFIER {
 			parser.parseVariableDeclaration()
 			continue
+		} else if kind.Kind == scanlex.WALRUS || kind.Kind == scanlex.QEQ || kind.Kind == scanlex.COLON_WALRUS {
+			parser.parseVariableDeclaration()
 		}
 		parser.parseExpressions()
-
+		parser.NewScope = true
 	}
 	return ast.BlockStatement{}
 }

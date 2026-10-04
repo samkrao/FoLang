@@ -1446,6 +1446,9 @@ type Variable struct {
 	IsInternalVar   bool
 	IsDiscard       bool
 	IsBindVar       bool
+	IsAutoInferred  bool
+	IsDynamicAny    bool
+	IsAutoRedecl    bool
 	IsPathDependent bool // x somevar.type; kinds
 }
 
