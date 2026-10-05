@@ -130,6 +130,7 @@ func (s SymbolDetails) GetSymbolType() SymbolID {
 }
 
 type ProgramSymbol struct {
+	SymbolId SymbolID
 	SymbolDetails
 	Kind_           string // application, library, packaged_export
 	LibKind_        string // application, dynamicvmrt, native, na
@@ -150,6 +151,7 @@ func (s ProgramSymbol) LibKind() string {
 
 type ApplicationSymbol struct {
 	SymbolDetails
+	ApplId SymbolID
 }
 
 func (s ApplicationSymbol) SymbolTypeKind() string {
@@ -186,6 +188,7 @@ const (
 	Value         BDTKind = "co.value"
 	Untyped       BDTKind = "co.untyped"
 	Uninit        BDTKind = "co.uninit"
+	Args          BDTKind = "co.args"
 )
 
 type BDTtype struct {
@@ -1552,7 +1555,7 @@ type MetaDataValue struct {
 // @co.
 type MetaDataApplication struct {
 	SymbolDetails
-	MetaDataId   ValueID
+	MetaDataId   SymbolID
 	Kind_        MetadataKind
 	DefinitionId SymbolID
 	Attributes   []MetaDataValue
@@ -1644,7 +1647,7 @@ const (
 
 // this->parent, this->parents etc.,
 type ThisProperties struct {
-	ThisId ValueID
+	ThisId SymbolID
 	SymbolDetails
 }
 
@@ -1657,7 +1660,7 @@ func (s ThisProperties) Kind() string {
 
 // co.out, co.in etc.,
 type CoProperties struct {
-	COId ValueID
+	COId SymbolID
 	SymbolDetails
 }
 
@@ -1670,7 +1673,7 @@ func (s CoProperties) Kind() string {
 
 // FΦλ. etc.,
 type FΦλProperties struct {
-	FolId ValueId
+	FolId SymbolID
 	SymbolDetails
 }
 
@@ -1697,7 +1700,7 @@ func (s SigileSymbol) Kind() string {
 type ReservedWord struct {
 	SymbolDetails
 	Kind_     KeywordKind
-	KeywordId ValueID
+	KeywordId SymbolID
 }
 
 func (s ReservedWord) SymbolTypeKind() string {
@@ -1711,7 +1714,7 @@ func (s ReservedWord) Kind() string {
 // 'identifer:
 type LabelSymbol struct {
 	SymbolDetails
-	LabelId ValueID
+	LabelId SymbolID
 	Kind_   string
 }
 
