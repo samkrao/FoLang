@@ -6,6 +6,49 @@ import (
 
 type SymbolsToString string
 
+type TypeID struct {
+	symbolId SymbolID
+}
+
+type ValueID struct {
+	symbolId SymbolID
+}
+
+type CallableID struct {
+	symbolId SymbolID
+}
+
+type KindID struct {
+	symbolId SymbolID
+}
+
+func (id TypeID) SymbolID() SymbolID {
+	return id.symbolId
+}
+
+func (id ValueID) SymbolID() SymbolID {
+	return id.symbolId
+}
+
+func (id CallableID) SymbolID() SymbolID {
+	return id.symbolId
+}
+func (id KindID) SymbolID() SymbolID {
+	return id.symbolId
+}
+
+func (id TypeID) AsValueID() ValueID {
+	return ValueID{symbolId: id.symbolId}
+}
+
+func (id KindID) AsValueID() ValueID {
+	return ValueID{symbolId: id.symbolId}
+}
+
+func (id CallableID) AsValueID() ValueID {
+	return ValueID{symbolId: id.symbolId}
+}
+
 func (s SymbolDetails) Anchor() SymbolTableID { return s.SymbolTableId }
 
 // SymbolInfo defines the interface for querying and mutating symbol metadata.
@@ -35,7 +78,6 @@ const (
 )
 
 type SymbolDetails struct {
-	SymbolId_        SymbolID
 	OwnedContextId   ContextID // context owned by this symbol, if any
 	SymbolType_      SymbolID
 	Name_            SymbolName
@@ -121,6 +163,7 @@ type ITypeSymbol interface {
 
 type AbstractType struct {
 	SymbolDetails
+	TypeId_ TypeID
 }
 
 type BDTKind string
@@ -807,6 +850,7 @@ type IKindSymbol interface {
 
 type KindSymbol struct {
 	SymbolDetails
+	KindId_ KindID
 }
 
 // _ co.struct = {}
@@ -1090,6 +1134,7 @@ type AbstractFunctionShape struct {
 	SignatureTypeId SymbolID
 	Parameters      []SymbolID
 	Results         []SymbolID
+	CallableId      CallableID
 }
 
 // x ()->()={}
@@ -1442,6 +1487,7 @@ type IIdentifier interface {
 // someVariable
 type Variable struct {
 	SymbolDetails
+	VariableId      ValueID
 	IsAdhoc         bool
 	IsInternalVar   bool
 	IsDiscard       bool
@@ -1461,6 +1507,7 @@ func (a Variable) IdentifierType() string {
 
 // SomeParameter
 type Parameter struct {
+	ParameterId ValueID
 	SymbolDetails
 	Position int
 }
@@ -1474,6 +1521,7 @@ func (a Parameter) IdentifierType() string {
 
 // SomeReturntype
 type Return struct {
+	ResultId ValueID
 	SymbolDetails
 	Position int
 }
@@ -1504,6 +1552,7 @@ type MetaDataValue struct {
 // @co.
 type MetaDataApplication struct {
 	SymbolDetails
+	MetaDataId   ValueID
 	Kind_        MetadataKind
 	DefinitionId SymbolID
 	Attributes   []MetaDataValue
@@ -1537,6 +1586,7 @@ const (
 // declaration. The registry key carries its symbolic spelling.
 type OperatorSymbol struct {
 	SymbolDetails
+	OperatorId      ValueID
 	Fixity          OperatorFixity
 	Precedence      int
 	Associativity   OperatorAssociativity
@@ -1561,6 +1611,7 @@ func (s OperatorSymbol) Kind() string {
 // isNone(), sameRef() ....
 type BuiltInProtoTypalProp struct {
 	SymbolDetails
+	BPTPId ValueID
 }
 
 func (s BuiltInProtoTypalProp) SymbolTypeKind() string {
@@ -1572,6 +1623,7 @@ func (s BuiltInProtoTypalProp) Kind() string {
 
 // 10, 'X', "AB"
 type Literal struct {
+	LiteralId ValueID
 	SymbolDetails
 }
 
@@ -1592,6 +1644,7 @@ const (
 
 // this->parent, this->parents etc.,
 type ThisProperties struct {
+	ThisId ValueID
 	SymbolDetails
 }
 
@@ -1604,6 +1657,7 @@ func (s ThisProperties) Kind() string {
 
 // co.out, co.in etc.,
 type CoProperties struct {
+	COId ValueID
 	SymbolDetails
 }
 
@@ -1616,6 +1670,7 @@ func (s CoProperties) Kind() string {
 
 // FΦλ. etc.,
 type FΦλProperties struct {
+	FolId ValueId
 	SymbolDetails
 }
 
@@ -1628,6 +1683,7 @@ func (s FΦλProperties) Kind() string {
 
 type SigileSymbol struct {
 	SymbolDetails
+	SigilId ValueID
 }
 
 func (s SigileSymbol) SymbolTypeKind() string {
@@ -1640,7 +1696,8 @@ func (s SigileSymbol) Kind() string {
 // this co
 type ReservedWord struct {
 	SymbolDetails
-	Kind_ KeywordKind
+	Kind_     KeywordKind
+	KeywordId ValueID
 }
 
 func (s ReservedWord) SymbolTypeKind() string {
@@ -1654,7 +1711,8 @@ func (s ReservedWord) Kind() string {
 // 'identifer:
 type LabelSymbol struct {
 	SymbolDetails
-	Kind_ string
+	LabelId ValueID
+	Kind_   string
 }
 
 func (s LabelSymbol) SymbolTypeKind() string {
@@ -1664,22 +1722,10 @@ func (s LabelSymbol) Kind() string {
 	return s.Kind_
 }
 
-// a()->()=>>b()
-type ChainedMethodSymbol struct {
-	SymbolDetails
-}
-
-func (s ChainedMethodSymbol) SymbolTypeKind() string {
-	return string(reflect.TypeOf(s).Name())
-}
-
-func (s ChainedMethodSymbol) Kind() string {
-	return "ChainedMethod"
-}
-
 // co.MatchBindings
 // contains co.tagged values wrapped in MatchBindings object
 type MatchBindings struct {
+	MatchBindingId TypeID
 	SymbolDetails
 }
 
@@ -1692,6 +1738,7 @@ func (s MatchBindings) Kind() string {
 
 // |idx, val| => co.out.println(val)
 type LambdaExpression struct {
+	LambdaId ValueID
 	SymbolDetails
 }
 
@@ -1791,4 +1838,3 @@ var _ SymbolInfo = (*BuiltInProtoTypalProp)(nil)
 var _ SymbolInfo = (*Literal)(nil)
 var _ SymbolInfo = (*ReservedWord)(nil)
 var _ SymbolInfo = (*LabelSymbol)(nil)
-var _ SymbolInfo = (*ChainedMethodSymbol)(nil)

@@ -25,6 +25,7 @@ var BuilinTypes = map[string]string{
 	"co.function":      "fΦλ.lang.function",
 	"co.error":         "fΦλ.lang.error",
 	"co.AbstractError": "fΦλ.lang.AbstractError",
+	"co.number":        "fΦλ.lang.number",
 }
 
 var BuitinInternal = map[string]string{

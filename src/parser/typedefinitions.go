@@ -5,6 +5,7 @@ import (
 
 	"github.com/samkrao/fo-lang/src/ast"
 	"github.com/samkrao/fo-lang/src/builtins"
+	symboltable "github.com/samkrao/fo-lang/src/context"
 	"github.com/samkrao/fo-lang/src/scanlex"
 )
 
@@ -18,7 +19,8 @@ func (parser Parser) parseTypeDefinitions() ast.SET {
 	if typeTok.Value == "co.type" {
 		if _, ok := builtins.BuilinTypes[parser.PeekWOS(0).Value]; ok {
 			if parser.PeekWOS(1).Kind == scanlex.SEMI_COLON || parser.PeekWOS(1).Kind == scanlex.NEWLINE {
-				alias := true
+				symb := symboltable.AliasType{}
+				symb.Name_ = symboltable.SymbolName(ident.Value)
 				fmt.Sprint(alias)
 				fmt.Sprint(ident)
 			}
