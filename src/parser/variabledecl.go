@@ -45,10 +45,13 @@ func (parser Parser) parseVariableDeclaration() ast.SET {
 	} else {
 
 	}
-	ident_symb.SymbolId_ = symboltable.SymbolID(tok.Value)
-	parser.Symbols.SymbolsById[ident_symb.SymbolId_] = &ident_symb
+	valueId := symboltable.ValueID{}
+	valueId.ToValueId(tok.Value)
+	ident_symb.VariableId = valueId
+
+	parser.Symbols.SymbolsById[ident_symb.VariableId.SymbolID()] = &ident_symb
 	return ast.Declaration{
-		DefinitionHeader: ast.DefinitionHeader{Symbol: ident_symb.SymbolId_}}
+		DefinitionHeader: ast.DefinitionHeader{Symbol: ident_symb.VariableId.SymbolID()}}
 }
 
 func (parser Parser) Exists(tok *scanlex.Token, symbolType string) bool {

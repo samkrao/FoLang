@@ -22,6 +22,10 @@ type KindID struct {
 	symbolId SymbolID
 }
 
+func (id ValueID) ToValueId(val string) {
+	id.symbolId = SymbolID(val)
+
+}
 func (id TypeID) SymbolID() SymbolID {
 	return id.symbolId
 }
@@ -105,7 +109,7 @@ func (s SymbolDetails) GetType() SymbolID {
 }
 
 // GetSymbolID returns the stable identity used by AST and symbol-table artifacts.
-func (s SymbolDetails) GetSymbolID() SymbolID { return s.SymbolId_ }
+func (s SymbolDetails) GetSymbolID() SymbolID { return "" }
 
 // GetContextID returns the identity of context which it owns if owns or empty or
 

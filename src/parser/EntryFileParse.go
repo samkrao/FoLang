@@ -18,8 +18,8 @@ func (parser Parser) parseEntry() ast.SET {
 
 func (parser Parser) collectPragmasAndorDirevites() ast.SET {
 
-	for !parser.Stream.AtEOF() {
-		tok := parser.Stream.Peek(0)
+	for !parser.IsEOF() {
+		tok := parser.PeekWOS(0)
 		if tok.Kind == scanlex.BUILT_INS_FOL && tok.SubKind == scanlex.DIRECTIVES {
 			state := 0
 
@@ -40,7 +40,7 @@ func (parser Parser) collectPragmasAndorDirevites() ast.SET {
 				break
 
 			}
-			parser.Stream.Next() // consume the directive token
+			parser.nextWOS() // consume the directive token
 			parser.expect(scanlex.OPEN_PAREN, "Missing opening parenthesis after directive")
 			metaData.Attributes = parser.parseMetaData()
 			parser.expect(scanlex.CLOSE_PAREN, "Missing closing parenthesis after directive")
@@ -55,8 +55,8 @@ func (parser Parser) collectPragmasAndorDirevites() ast.SET {
 
 func (parser Parser) parseDecoratorAndorAnnotation() ast.SET {
 
-	for !parser.Stream.AtEOF() {
-		tok := parser.Stream.Peek(0)
+	for !parser.IsEOF() {
+		tok := parser.PeekWOS(0)
 		if tok.Kind == scanlex.BUILT_INS_FOL && tok.SubKind == scanlex.DIRECTIVES {
 			metaData := symboltable.MetaDataApplication{}
 
@@ -67,7 +67,7 @@ func (parser Parser) parseDecoratorAndorAnnotation() ast.SET {
 					metaData.Kind_ = symboltable.Decorator
 				}
 
-				parser.Stream.Next() // consume the directive token
+				parser.nextWOS() // consume the directive token
 				parser.expect(scanlex.OPEN_PAREN, "Missing opening parenthesis after directive")
 				metaData.Attributes = parser.parseMetaData()
 				parser.expect(scanlex.CLOSE_PAREN, "Missing closing parenthesis after directive")
@@ -86,14 +86,14 @@ func (parser Parser) parseDecoratorAndorAnnotation() ast.SET {
 
 func (parser Parser) parseMetaData() []symboltable.MetaDataValue {
 	var metaDatas []symboltable.MetaDataValue = []symboltable.MetaDataValue{}
-	for !parser.Stream.AtEOF() && parser.Stream.Peek(0).Kind != scanlex.CLOSE_PAREN {
+	for !parser.IsEOF() && parser.PeekWOS(0).Kind != scanlex.CLOSE_PAREN {
 		idx := 1
 
 		for {
-			if parser.Stream.Peek(1).Kind == scanlex.EQUALS {
+			if parser.PeekWOS(1).Kind == scanlex.EQUALS {
 				ok, tok := parser.expect(scanlex.IDENTIFIER, "Missing Key or Value in metadata")
 				var value any
-				parser.Stream.Next() // consume the equals sign
+				parser.nextWOS() // consume the equals sign
 				value = parser.ParserMetaDataAttributeValue()
 				if !ok {
 					continue
@@ -104,8 +104,8 @@ func (parser Parser) parseMetaData() []symboltable.MetaDataValue {
 				metaDatas = append(metaDatas, symboltable.MetaDataValue{Value: value, OnlyValue: true, SourceIndex: idx})
 
 			}
-			if parser.Stream.Peek(0).Kind == scanlex.COMMA {
-				parser.Stream.Next() // consume the comma
+			if parser.PeekWOS(0).Kind == scanlex.COMMA {
+				parser.nextWOS() // consume the comma
 			} else {
 				break
 			}
@@ -117,28 +117,28 @@ func (parser Parser) parseMetaData() []symboltable.MetaDataValue {
 }
 
 func (parser Parser) ParserMetaDataAttributeValue() any {
-	if parser.Stream.Peek(0).Kind == scanlex.STRING {
-		return parser.Stream.Next().Value
-	} else if parser.Stream.Peek(0).Kind == scanlex.CHAR {
-		return parser.Stream.Next().Value
-	} else if parser.Stream.Peek(0).Kind == scanlex.IDENTIFIER || parser.Stream.Peek(0).Kind == scanlex.COMPOSITE_IDENTIFIER || parser.Stream.Peek(0).Kind == scanlex.BUILT_INS_FOL || parser.Stream.Peek(0).Kind == scanlex.KEYWORD {
-		return parser.Stream.Next().Value
-	} else if parser.Stream.Peek(0).Kind == scanlex.NUMBER {
-		return parser.Stream.Next().Value
-	} else if parser.Stream.Peek(0).Kind == scanlex.BOOL {
-		return parser.Stream.Next().Value
+	if parser.PeekWOS(0).Kind == scanlex.STRING {
+		return parser.nextWOS().Value
+	} else if parser.PeekWOS(0).Kind == scanlex.CHAR {
+		return parser.nextWOS().Value
+	} else if parser.PeekWOS(0).Kind == scanlex.IDENTIFIER || parser.PeekWOS(0).Kind == scanlex.COMPOSITE_IDENTIFIER || parser.Stream.Peek(0).Kind == scanlex.BUILT_INS_FOL || parser.Stream.Peek(0).Kind == scanlex.KEYWORD {
+		return parser.nextWOS().Value
+	} else if parser.PeekWOS(0).Kind == scanlex.NUMBER {
+		return parser.nextWOS().Value
+	} else if parser.PeekWOS(0).Kind == scanlex.BOOL {
+		return parser.nextWOS().Value
 	} else {
-		if parser.Stream.Peek(0).Kind == scanlex.OPEN_PAREN {
-			parser.Stream.Next() // consume the open paren
+		if parser.PeekWOS(0).Kind == scanlex.OPEN_PAREN {
+			parser.nextWOS() // consume the open paren
 			value := parser.parseMetaData()
 			parser.expect(scanlex.CLOSE_PAREN, "Missing closing parenthesis after directive")
 			return value
 		} else if parser.Stream.Peek(0).Kind == scanlex.OPEN_BRACKET {
-			parser.Stream.Next() // consume the open bracket
+			parser.nextWOS() // consume the open bracket
 			value := parser.parseMetaData()
 			parser.expect(scanlex.CLOSE_BRACKET, "Missing closing bracket after directive")
 			return value
-		} else if parser.Stream.Peek(0).Kind == scanlex.OPEN_CURLY {
+		} else if parser.PeekWOS(0).Kind == scanlex.OPEN_CURLY {
 			parser.Stream.Next() // consume the open curly
 			value := parser.parseMetaData()
 			parser.expect(scanlex.CLOSE_CURLY, "Missing closing curly after directive")

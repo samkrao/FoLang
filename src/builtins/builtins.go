@@ -38,6 +38,9 @@ var BuitinInternal = map[string]string{
 	"co.symbol":         "fΦλ.lang.symbol",
 	"co.generic":        "fΦλ.lang.generic",
 	"co.specializetype": "fΦλ.lang.specializetype",
+	"co.args":           "fΦλ.lang.args",
+	"co.params":         "fΦλ.lang.params",
+	"co.results":        "fΦλ.lang.results",
 }
 
 var BuiltinKinds = map[string]string{
