@@ -2244,6 +2244,58 @@ adder()->(IntAdder) ={
 ```
 When a function returns an inner function that captures bindings from the enclosing lexical scope, the returned function is a closure. The captured bindings remain part of that closure's state according to the closure rules.
 
+#### Partial Parameter Calling 
+
+```folang
+someFunc( a co.int, b co.string, c co.float)->(co.int)={
+
+}
+
+Calling
+
+E.g 1:
+x := someFunc(10,"A",12.5f);
+
+Curried calling
+
+x := someFunc(10,?,?);
+
+y := x("A",?);
+
+z := y(12.5f);
+
+```
+
+> How this is useful 
+
+When passing function objects across nestted function with partial parameter set where the values of parameters are known at different stages instead of passing parameters we can incrementally build the function object and pass that function object. Here once the parameters are fully passed the call will happen automatically `z` is an `co.int` the result of the function call not function object.
+
+The same can be applied to bound callables
+
+```folang
+add(a co.int, b co.int)->(co.int)={
+    $=> a + b;
+}
+
+x co.boundcallable = add.bind(10,?);
+
+y := x.bind(30); //y is of type co.boundcallable
+
+z := y.invoke(); //actual call happens here
+
+```
+
+The difference is explicit invoke is needed in case of partial boundcallables same as boundcallables.
+
+> Are these available to all functions by default?
+
+No, as these are function shapes not functions like curried and other special functions and must be annotated to enable partial parameters
+
+Reason for not available by default is overload resolution and complexities.
+
+`co.dap.enablepartialparams` this annotation is must on the functions those need partial parameter invocations.
+
+
 #### Named Callable-Type Implementation
 
 An ordinary named function may implement a named `co.type` whose resolved underlying type is callable. This form reuses the callable contract instead of restating parameter and result types.
@@ -2266,6 +2318,8 @@ x co.int = 10;
 SomeFun funType(x) = x * 10;
 ```
 > name CallableType(parameterNames) = expression;
+
+
 
 #### Function Patterns
 
