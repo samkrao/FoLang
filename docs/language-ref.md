@@ -577,7 +577,7 @@ Derived types are named through `co.type` declarations before ordinary variable 
 | `co.subtype` | Type-level set/range selecting strict subtypes of the referenced type. |
 | `co.supertype` | Type-level set/range selecting strict supertypes of the referenced type. |
 | `co.dependentType(...)` | RHS type-expression constructor used by a `co.type` declaration to define a value-indexed dependent type family. It is not a declaration kind or callable result kind. |
-| `co.polymorphic(...)` | RHS type-expression constructor defining a named polymorphic type from a binder set and a type body. |
+| `co.forall(...)` | RHS type-expression constructor defining a named polymorphic type from a binder set and a type body. alias is `co.polymorphic` both are same|
 | `co.refinementType` | Base type restricted by a predicate over candidate values. |
 | `co.associatedType` | Associated type placeholder/binding used by signature/module contracts. |
 | `co.predicateType` | Type-level predicate/filter over candidate types. |
@@ -585,14 +585,31 @@ Derived types are named through `co.type` declarations before ordinary variable 
 | `co.type` | General named type declaration kind. |
 | `co.generic` | Reserved/future generic-type constructor; it is not part of the active generic declaration model unless this reference explicitly enables it. |
 | `co.shape` | Shape/type-expression facility for callable/type shapes where defined by the syntax and semantic rules in this reference. |
+| `co.exists`|A value contains some particular T, but its identity is hidden from the consumer.|
+|`co.typeLambda`|A type-level lambda creates a reusable type constructor|
+|`co.mu`|Recursive types describe structures that refer to themselves.
 
-`co.variants(...)`, `co.data(...)`, `co.dependentType(...)`, and `co.polymorphic(...)` are not interchangeable:
+Mathematically:
+\[
+\mu T.\;1+(\mathrm{Int}\times T)
+\]
+
+This describes an integer list as either empty or an integer paired with another list.|
+|`co.pi`| A dependent product generalizes function types by allowing the return type to depend on an input value.
+\[
+\Pi(n:\mathrm{Nat}).\mathrm{Vector}(\mathrm{Int},n)
+\]|
+|`co.sigma`| A dependent sum represents a value paired with another value whose type depends on the first.
+\[
+\Sigma(n:\mathrm{Nat}).\mathrm{Vector}(\mathrm{Int},n)
+\]|
+`co.variants(...)`, `co.data(...)`, `co.dependentType(...)`, and `co.forall(...)` are not interchangeable:
 
 ```text
 co.variants(...)      parameterized closed variant family
 co.data(...)          concrete closed ADT
 co.dependentType(...) value-indexed dependent type family
-co.polymorphic(...)   explicitly bound polymorphic type
+co.forall(...)   explicitly bound polymorphic type
 ```
 
 ***
@@ -1225,7 +1242,7 @@ Predicate types are especially useful in generic bounds and other type positions
 
 ```folang
 SomeFArg co.type =
-    co.polymorphic({T}, (T, T)->(T));
+    co.forall({T}, (T, T)->(T));
 ```
 
 `T` is a type binder owned by the polymorphic type declaration. Each valid instantiation binds `T` to one type for that instantiation; the binder is not supplied by an unrelated `co.generic` declaration.
@@ -2335,7 +2352,7 @@ classify(n co.int)->(co.string) =
 
 #### Expression-Bodied Functions with Polymorphic Callable Types
 ```folang
-PolyId co.type = co.polymorphic({U}, (U)->(U));
+PolyId co.type = co.forall({U}, (U)->(U));
 
 identity PolyId(value) = value;
 ```
@@ -3228,13 +3245,13 @@ _ co.unit = {
 
 ##### Rank-2: The function parameter is itself polymorphic (higher-rank)
 
-The passed function stays generic **inside the callee**. The binder list of `co.polymorphic(...)` belongs to a named `co.type`; the consuming function does not own those binders and is not made generic merely by accepting the named polymorphic type.
+The passed function stays generic **inside the callee**. The binder list of `co.forall(...)` belongs to a named `co.type`; the consuming function does not own those binders and is not made generic merely by accepting the named polymorphic type.
 
 **Named polymorphic type**
 //someGen4.unit.fol
 ```folang
 _ co.unit = {
-    SomeFArg co.type = co.polymorphic({T}, (T, T)->(T));
+    SomeFArg co.type = co.forall({T}, (T, T)->(T));
 
     // T belongs to SomeFArg; this consumer is not itself generic.
     someFunction(f SomeFArg)->(co.int) = {}
@@ -3267,7 +3284,7 @@ _ co.unit = {
 //somGen7.unit.fol
 ```folang
 _ co.unit = {
-    PolyIdentity co.type = co.polymorphic({T}, (T)->(T));
+    PolyIdentity co.type = co.forall({T}, (T)->(T));
 
     identity PolyIdentity(x) = x;
 
@@ -3283,13 +3300,13 @@ _ co.unit = {
 
 ##### Rank-3: A Parameter is Itself a Rank-2 Function
 
-Rank-3 uses named `co.type` layers. Each `co.polymorphic(...)` binder list remains inside the type declaration that owns it; consuming and returning functions use the resulting named types.
+Rank-3 uses named `co.type` layers. Each `co.forall(...)` binder list remains inside the type declaration that owns it; consuming and returning functions use the resulting named types.
 
 **Named type layers**
 //someGen9.unit.fol
 ```folang
 _ co.unit = {
-    Rank2FnType  co.type = co.polymorphic({T}, (T, T)->(T));
+    Rank2FnType  co.type = co.forall({T}, (T, T)->(T));
     Rank3ArgType co.type = (Rank2FnType)->(co.int);
 
     applyRank2(f Rank3ArgType, value Rank2FnType)->(co.int) = {
@@ -3303,7 +3320,7 @@ _ co.unit = {
 //somGen10.unit.fol
 ```folang
 _ co.unit = {
-    Rank2FnType co.type = co.polymorphic({T}, (T)->(T));
+    Rank2FnType co.type = co.forall({T}, (T)->(T));
     Rank3ConsumerType co.type = (Rank2FnType)->(co.int);
 
     consumeRank2(f Rank2FnType)->(co.int) = {
@@ -3334,7 +3351,7 @@ type object is passed through the ordinary call syntax:
 ```folang
 _ co.unit = {
     Box(T) co.type = co.variants(Boxed(T));
-    PolyId co.type = co.polymorphic({U}, (U)->(U));
+    PolyId co.type = co.forall({U}, (U)->(U));
 
     @co.dap.generic(
         types=[{name=T}],
@@ -3358,7 +3375,7 @@ When the argument is instead a callable value whose resolved type is a named pol
 ```folang
 _ co.unit = {
     Box(T) co.type = co.variants(Boxed(T));
-    PolyId co.type = co.polymorphic({U}, (U)->(U));
+    PolyId co.type = co.forall({U}, (U)->(U));
 
     identity PolyId(value) = value;
 
@@ -3374,12 +3391,12 @@ _ co.unit = {
 }
 ```
 
-Here the frontend resolves `identity` as a named function whose callable type is `PolyId`. Because `PolyId` resolves to `co.polymorphic({U}, (U)->(U))`, `T` is bound to `PolyId` directly. FoLang does not require or permit a second metadata switch to repeat that fact. In type-theory terminology this permits a generic variable to range over a polymorphic type, but in FoLang the decision is entirely type-driven.
+Here the frontend resolves `identity` as a named function whose callable type is `PolyId`. Because `PolyId` resolves to `co.forall({U}, (U)->(U))`, `T` is bound to `PolyId` directly. FoLang does not require or permit a second metadata switch to repeat that fact. In type-theory terminology this permits a generic variable to range over a polymorphic type, but in FoLang the decision is entirely type-driven.
 
 The named-type rule still applies. A complex polymorphic type expression must be named before it participates in ordinary type use or generic substitution. The inline spelling below therefore remains invalid:
 
 ```folang
-result := box(co.polymorphic({U}, (U)->(U))); // compiler error: use PolyId
+result := box(co.forall({U}, (U)->(U))); // compiler error: use PolyId
 ```
 
 ***
@@ -3390,8 +3407,8 @@ result := box(co.polymorphic({U}, (U)->(U))); // compiler error: use PolyId
 |---|---|---|
 | Rank-1 generic parameter | ✅ Yes | Declare markers and derived aliases in `@co.dap.generic` |
 | Rank-1 generic return | ✅ Yes | Parameters and results use named aliases when their type is derived |
-| Rank-2 param via named `co.type` | ✅ Yes | `co.polymorphic(...)` owns the binders inside the named type declaration; the consumer uses that type |
-| Rank-2 param via a `co.function` value declaration | ❌ Compiler error | Function objects are concrete values; define a named `co.type` with `co.polymorphic(...)` instead |
+| Rank-2 param via named `co.type` | ✅ Yes | `co.forall(...)` owns the binders inside the named type declaration; the consumer uses that type |
+| Rank-2 param via a `co.function` value declaration | ❌ Compiler error | Function objects are concrete values; define a named `co.type` with `co.forall(...)` instead |
 | Rank-2 return via named `co.type` | ✅ Yes | Return a named callable that implements the polymorphic callable type |
 | Implement a named polymorphic callable type | ✅ Yes | `identity PolyId(value) = value;` inherits parameter/result types and polymorphic binders from `PolyId` |
 | Rank-3 via named `co.type` layers | ✅ Yes | Higher-rank structure is expressed by composing named types |
@@ -3399,9 +3416,9 @@ result := box(co.polymorphic({U}, (U)->(U))); // compiler error: use PolyId
 | Rank-3 via a `co.function` value declaration | ❌ Compiler error | Same rule as Rank-2; function objects are concrete |
 | Pass a named polymorphic type object to a generic parameter | ✅ Yes | `T` resolves to `co.type`; the parameter value is the named type object |
 | Pass a value whose type is a named polymorphic type | ✅ Yes | `T` resolves directly to that named polymorphic type from the value's resolved callable type; no classification flag is required |
-| Inline `co.polymorphic(...)` call argument | ❌ Compiler error | Name the polymorphic type with `co.type` and pass that name |
+| Inline `co.forall(...)` call argument | ❌ Compiler error | Name the polymorphic type with `co.type` and pass that name |
 
-`@co.dap.generic(types=[...])` remains the generic-marker mechanism for declarations that define their own generic signature. `co.polymorphic(...)` separately introduces binders owned by the named `co.type` value it constructs. An ordinary named function that implements such a callable type inherits that type's binder and callable contract and therefore does not redeclare the same binders with `@co.dap.generic`. Functions express higher-rank parameters and returns by using these named polymorphic callable types. See [Polymorphic Types](#polymorphic-types), [Named Callable-Type Implementation](#named-callable-type-implementation), and [Generic Declarations and Parameterized Types](#generic-declarations-and-parameterized-types).
+`@co.dap.generic(types=[...])` remains the generic-marker mechanism for declarations that define their own generic signature. `co.forall(...)` separately introduces binders owned by the named `co.type` value it constructs. An ordinary named function that implements such a callable type inherits that type's binder and callable contract and therefore does not redeclare the same binders with `@co.dap.generic`. Functions express higher-rank parameters and returns by using these named polymorphic callable types. See [Polymorphic Types](#polymorphic-types), [Named Callable-Type Implementation](#named-callable-type-implementation), and [Generic Declarations and Parameterized Types](#generic-declarations-and-parameterized-types).
 
 #### Generics Inheritances and Types
 
@@ -3416,23 +3433,23 @@ B) Path-dependent types
 
 #### Polymorphic Types
 
-`co.polymorphic(...)` is the built-in RHS type-expression constructor for a named polymorphic type. It is not a keyword and does not introduce a separate declaration category. The enclosing declaration remains an ordinary `co.type` declaration.
+`co.forall(...)` is the built-in RHS type-expression constructor for a named polymorphic type. It is not a keyword and does not introduce a separate declaration category. The enclosing declaration remains an ordinary `co.type` declaration.
 
 Canonical form:
 
 ```folang
-PolyId co.type = co.polymorphic({T}, (T)->(T));
+PolyId co.type = co.forall({T}, (T)->(T));
 ```
 
-The first argument, `{...}`, introduces the polymorphic type binders owned by that one type expression. The second argument is the polymorphic type body and may reference those binders. Binder scope begins with the binder set of that constructor and ends with the enclosing `co.polymorphic(...)` expression. The binders do not become declarations in the surrounding unit, package, function, class, or other lexical scope.
+The first argument, `{...}`, introduces the polymorphic type binders owned by that one type expression. The second argument is the polymorphic type body and may reference those binders. Binder scope begins with the binder set of that constructor and ends with the enclosing `co.forall(...)` expression. The binders do not become declarations in the surrounding unit, package, function, class, or other lexical scope.
 
-The resolved type declaration is authoritative for polymorphic classification. A symbol whose resolved callable type is a named `co.polymorphic(...)` type is polymorphic by virtue of that type; a symbol whose resolved callable type is concrete is concrete. FoLang does not use a separate source flag to assert, enable, disable, or override this classification. For example, after `identity PolyId(value) = value;` resolves, the compiler knows that `identity` is polymorphic because its declared callable type is `PolyId`.
+The resolved type declaration is authoritative for polymorphic classification. A symbol whose resolved callable type is a named `co.forall(...)` type is polymorphic by virtue of that type; a symbol whose resolved callable type is concrete is concrete. FoLang does not use a separate source flag to assert, enable, disable, or override this classification. For example, after `identity PolyId(value) = value;` resolves, the compiler knows that `identity` is polymorphic because its declared callable type is `PolyId`.
 
-`co.polymorphic(...)` is valid only as the complete RHS type expression of a `co.type` declaration. A polymorphic type must therefore be named before it is used in a field, variable, parameter, receiver, function result, annotation value, or ordinary call argument.
+`co.forall(...)` is valid only as the complete RHS type expression of a `co.type` declaration. A polymorphic type must therefore be named before it is used in a field, variable, parameter, receiver, function result, annotation value, or ordinary call argument.
 
 ```folang
-SomeFArg co.type = co.polymorphic({T}, (T, T)->(T));
-PolyId   co.type = co.polymorphic({U}, (U)->(U));
+SomeFArg co.type = co.forall({T}, (T, T)->(T));
+PolyId   co.type = co.forall({U}, (U)->(U));
 
 // Rank-2 parameter: the consumer is not itself generic.
 someFunction(f SomeFArg)->(co.int) = {}
@@ -3444,24 +3461,24 @@ identity PolyId(value) = value;
 makeIdentity()->(PolyId) = { $=> identity; }
 ```
 
-A declaration that defines its own generic signature continues to use `@co.dap.generic`. By contrast, an ordinary named function implementing a named `co.polymorphic(...)` callable type inherits that callable contract and does not redeclare its binders with `@co.dap.generic`. Restricted lambdas do not introduce a `co.polymorphic(...)` binder set of their own.
+A declaration that defines its own generic signature continues to use `@co.dap.generic`. By contrast, an ordinary named function implementing a named `co.forall(...)` callable type inherits that callable contract and does not redeclare its binders with `@co.dap.generic`. Restricted lambdas do not introduce a `co.forall(...)` binder set of their own.
 
 Inline polymorphic type construction is invalid in ordinary type-use or value-expression positions:
 
 ```folang
 consume(
-    value co.polymorphic({T}, (T)->(T))
+    value co.forall({T}, (T)->(T))
 )->(); // compiler error: name the polymorphic type first
 
 result := box(
-    co.polymorphic({U}, (U)->(U))
+    co.forall({U}, (U)->(U))
 ); // compiler error: pass the named type object instead
 ```
 
 The valid type-object form is:
 
 ```folang
-PolyId co.type = co.polymorphic({U}, (U)->(U));
+PolyId co.type = co.forall({U}, (U)->(U));
 result := box(PolyId);
 ```
 
@@ -3475,13 +3492,13 @@ identity PolyId(value) = value;
 
 | Form | Status | Context |
 |---|---|---|
-| `name co.type = co.polymorphic(...);` | ✅ Allowed | Named polymorphic type definition |
+| `name co.type = co.forall(...);` | ✅ Allowed | Named polymorphic type definition |
 | `identity PolyId(value) = value;` | ✅ Allowed | Named function implements the callable contract and binders owned by `PolyId` |
-| polymorphic binder syntax in an ordinary declaration head | ❌ Compiler error | Define the binder set in a named `co.polymorphic(...)` type or use `@co.dap.generic` for a declaration that owns its own generic signature |
-| inline `co.polymorphic(...)` in an ordinary parameter/result type | ❌ Compiler error | Declare a named polymorphic `co.type` and use that name |
-| inline `co.polymorphic(...)` as an ordinary call argument | ❌ Compiler error | Pass the named polymorphic type object instead |
+| polymorphic binder syntax in an ordinary declaration head | ❌ Compiler error | Define the binder set in a named `co.forall(...)` type or use `@co.dap.generic` for a declaration that owns its own generic signature |
+| inline `co.forall(...)` in an ordinary parameter/result type | ❌ Compiler error | Declare a named polymorphic `co.type` and use that name |
+| inline `co.forall(...)` as an ordinary call argument | ❌ Compiler error | Pass the named polymorphic type object instead |
 
-**The rule in one sentence:** `co.polymorphic(...)` owns the polymorphic callable contract; an ordinary named function may implement that named contract directly without redeclaring its binders.
+**The rule in one sentence:** `co.forall(...)` owns the polymorphic callable contract; an ordinary named function may implement that named contract directly without redeclaring its binders.
 
 
 > Generic declarations that own their own generic parameter set are supported only for structs, classes, ordinary functions, and ordinary methods, and introduce those parameters through `@co.dap.generic`. An ordinary function implementing a named polymorphic callable type is different: the binder set is owned by the named `co.type`, so the implementation does not redeclare it.
