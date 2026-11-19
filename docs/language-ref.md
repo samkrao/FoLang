@@ -587,22 +587,7 @@ Derived types are named through `co.type` declarations before ordinary variable 
 | `co.shape` | Shape/type-expression facility for callable/type shapes where defined by the syntax and semantic rules in this reference. |
 | `co.exists`|A value contains some particular T, but its identity is hidden from the consumer.|
 |`co.typeLambda`|A type-level lambda creates a reusable type constructor|
-|`co.mu`|Recursive types describe structures that refer to themselves.
 
-Mathematically:
-\[
-\mu T.\;1+(\mathrm{Int}\times T)
-\]
-
-This describes an integer list as either empty or an integer paired with another list.|
-|`co.pi`| A dependent product generalizes function types by allowing the return type to depend on an input value.
-\[
-\Pi(n:\mathrm{Nat}).\mathrm{Vector}(\mathrm{Int},n)
-\]|
-|`co.sigma`| A dependent sum represents a value paired with another value whose type depends on the first.
-\[
-\Sigma(n:\mathrm{Nat}).\mathrm{Vector}(\mathrm{Int},n)
-\]|
 `co.variants(...)`, `co.data(...)`, `co.dependentType(...)`, and `co.forall(...)` are not interchangeable:
 
 ```text
