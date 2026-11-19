@@ -586,7 +586,6 @@ Derived types are named through `co.type` declarations before ordinary variable 
 | `co.generic` | Reserved/future generic-type constructor; it is not part of the active generic declaration model unless this reference explicitly enables it. |
 | `co.shape` | Shape/type-expression facility for callable/type shapes where defined by the syntax and semantic rules in this reference. |
 | `co.exists`|A value contains some particular T, but its identity is hidden from the consumer.|
-|`co.typeLambda`|A type-level lambda creates a reusable type constructor|
 
 `co.variants(...)`, `co.data(...)`, `co.dependentType(...)`, and `co.forall(...)` are not interchangeable:
 
