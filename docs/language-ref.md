@@ -336,6 +336,22 @@ A third-party backend may use a completely different runtime architecture or mem
 - Code generation target is **C++**
 - Uses **Clang** or **GCC** to generate native binaries from generated C++ IR
 
+### Production Execution Model and Dynamic Runtime
+
+FoLang is a backend-independent programming language. The language specification defines externally observable semantics without prescribing a particular compilation or execution architecture. Third-party backends may implement FoLang using native compilation, virtual machines, interpretation, JIT compilation, or other conforming execution strategies.
+
+The **default/reference FoLang backend prioritizes statically compiled native applications and libraries**. Developers should use statically compiled code and libraries for production applications, including enterprise systems, application servers, database engines, rule engines, plugin platforms, developer tools, and applications that process dynamically supplied data.
+
+FoLang's first-class type objects, `co.any`, `co.dynamic`, generics, polymorphism, reflection capabilities permitted in the applicable domain, and other language facilities support sophisticated runtime behavior without requiring dynamically executed FoLang definitions.
+
+The `dynamicvmrt` capability is provided primarily for **experimentation, education, language research, and exploration of dynamic execution models**. It supports facilities such as dynamic type and class loading, runtime method modification, and managed loader environments.
+
+**The default FoLang backend does not recommend `dynamicvmrt` libraries for production applications.** Production developers should prefer statically compiled FoLang alternatives.
+
+This recommendation does not prohibit `dynamicvmrt` use where otherwise permitted by the language specification, impose a restriction on third-party backend architectures, or change the normative capability boundaries governing dynamic-runtime libraries.
+
+
+
 #### License 
 
 **Third-party backends may use their own licensing terms and implementation choices.** The default backend uses the following license.
