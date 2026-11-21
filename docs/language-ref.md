@@ -5374,7 +5374,7 @@ Default Backend may provide information of Prototype Object link on reflection b
 | `co` | language data types and kinds projected from `fΦλ.lang`; network declarations such as `http`, `tcp`, and `udp` projected from `fΦλ.net`; and core collections/types such as `List`, `Map`, `Set`, and `Comparable` projected from `fΦλ.core` |
 | `co.sys` | file, concurrent, parallel, goto, invoke, bind, call, apply, settimeout, setinterval, scheduler, cron, event |
 | `co.os` | signal, cmd, execute, run, env, getenv, setenv, sleep, exit, cwd, chdir, fork, wait, pipe, dup, dup2, close, readfd, writefd ,random|
-| `co.meta` | ast, instrument, transform, augment, reflect, introspect, patch, inject, create, runtime(eval,etc), realm |
+| `co.meta` | ast, instrument, transform, augment, reflect, introspect, patch, inject, create, runtime(eval,etc), realm, pol |
 | `co.native` | load, register, asm, inline, emit, ffi, spawnon[gpu,cpu,npu,apu,fpga,asic,tpu,mki,mcu],arch[x86,x86-64,risc,arm,vliw] |
 | `co.in` | read, readln |
 | `co.out` | println, print |
