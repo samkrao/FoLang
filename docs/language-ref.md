@@ -599,7 +599,7 @@ Derived types are named through `co.type` declarations before ordinary variable 
 | `co.predicateType` | Type-level predicate/filter over candidate types. |
 | `co.data(...)` | Concrete closed ADT constructor whose payload types are already concrete/resolved. It is not parameterized by declaration-head type parameters. |
 | `co.type` | General named type declaration kind. |
-| `co.generic(T)` | RHS wrapper for a class-declared generic type marker `T` in a concrete class-local `co.type` alias; resolves on class specialization. |
+| `co.generic(T)` | Converts an existing generic-class marker into a deferred type expression for a class-owned `co.type` alias; see [Generic Class Inheritance and Type Members](#generic-class-inheritance-and-type-members). |
 | `co.shape` | Shape/type-expression facility for callable/type shapes where defined by the syntax and semantic rules in this reference. |
 | `co.exists`|A value contains some particular T, but its identity is hidden from the consumer.|
 
@@ -1334,21 +1334,7 @@ It is primarily useful in macros and other metaprogramming facilities that inspe
 
 #### Generic-Dependent Class Type Aliases
 
-```folang
-// Repository.fol
-@co.dap.generic(types=[{name=T}])
-_ co.class = {
-    @co.dap.public
-    Item co.type = co.generic(T);
-
-    @co.dap.public
-    Result co.type = co.List(Item);
-}
-```
-
-`@co.dap.generic(types=[{name=T}])` declares the generic marker `T`; `co.generic(T)` does **not** declare or bind another marker. It is an explicit RHS type-expression wrapper allowing a class-local `co.type` alias to denote the **eventually concrete** type argument associated with `T`. The alias resolves when the enclosing generic class is specialized. `Item` therefore resolves to the bound type and `Result` to `co.List` of that same type. Both remain ordinary identity-preserving aliases, not new nominal types or runtime class fields.
-
-The exact restrictions, member lookup, visibility and class-inheritance substitution rules are specified in [Generic Class Inheritance and Type Members](#generic-class-inheritance-and-type-members).
+Generic class-owned type aliases and the `co.generic(T)` marker-to-type-expression conversion are defined in [Generic Class Inheritance and Type Members](#generic-class-inheritance-and-type-members).
 
 #### Function Types
 
@@ -2984,7 +2970,7 @@ add(a U, b U)->(T) = { $=> a + b; }
 
 ##### Generic Marker Classification
 
-Names listed by the immediately associated `@co.dap.generic(types=[...])` are **generic markers** for that declaration. In applicable type positions the parser/frontend records those names as generic-marker references; they are not looked up as ordinary type symbols. In a generic class, `co.generic(T)` may additionally wrap an existing class-owned marker `T` only in the specifically permitted class-local `co.type` RHS position; it neither changes marker classification nor introduces a new binder.
+Names listed by the immediately associated `@co.dap.generic(types=[...])` are **generic markers** for that declaration. In applicable type positions the parser/frontend records those names as generic-marker references; they are not looked up as ordinary type symbols. For the special case of class-owned type aliases, see [Generic Class Inheritance and Type Members](#generic-class-inheritance-and-type-members).
 
 A type-position identifier that is **not** listed in that declaration's `types=[...]` list is an ordinary type reference. It is resolved through the normal symbol/type environment and is a compiler error when no such type exists.
 
@@ -3441,7 +3427,7 @@ result := box(co.forall({U}, (U)->(U))); // compiler error: use PolyId
 
 A generic `co.class` may inherit a class with a concrete generic specialization, including a specialization dependent on the child's own generic markers. Class inheritance remains subject to the existing `@co.dap.oops` rules: at most two direct class parents, applicable accessibility rules, explicit selection of inherited concrete methods for exposure through the child type, and the existing override/conflict requirements. A generic class specialization is not itself an implicit covariance or contravariance rule: `Derived(X)` inheriting `Base(X)` does not make `Base(X)` and `Base(Y)` interchangeable.
 
-A generic class may declare **concrete class-owned type aliases** using `Name co.type = type-expression;` within its class body. This is a specifically permitted exception to the ordinary restriction on nested named type declarations; it does not permit nested `co.struct`, `co.class`, or abstract `co.associatedType` declarations. Class type aliases are compile-time members, not instance fields, do not participate in instance initialization, and do not create distinct nominal type identities. `co.associatedType` continues to belong to module/signature contracts.
+A generic class may declare **class-owned type aliases** using `Name co.type = type-expression;` within its class body. This is a specifically permitted exception to the ordinary restriction on nested named type declarations; it does not permit nested `co.struct`, `co.class`, or abstract `co.associatedType` declarations. Class type aliases are compile-time members, not instance fields, do not participate in instance initialization, and do not create distinct nominal type identities. `co.associatedType` continues to belong to module/signature contracts.
 
 ```folang
 // Repository.fol
@@ -3464,11 +3450,17 @@ _ co.class = {
 
 The `classes=[Repository(U)]` entry identifies the generic parent's specialization relative to the child's declared marker `U`. For `CachedRepository(Employee)`, the direct parent is `Repository(Employee)`; its `Item` is `Employee` and its `Result` is `co.List(Employee)`. A non-generic class may likewise inherit a fully specified `Repository(Employee)` parent. All parent generic arguments must resolve consistently with their declared bounds before the effective parent type is accepted.
 
-##### `co.generic(T)` rules
+##### Generic marker conversion: `co.generic(T)`
+
+A generic marker is **not itself a type**; it is a symbolic placeholder for a type supplied during specialization. Concrete, abstract, and generic types are all types, but a generic marker is none of these. Consequently, `Item co.type = T;` is invalid: a `co.type` alias requires a type expression, not a bare marker.
+
+FoLang provides `co.generic(T)` to accept an existing marker and produce a **deferred generic-dependent type expression** that `co.type` can alias. This permits the alias to be declared before the marker is bound; specialization substitutes the supplied type without creating a new nominal identity or runtime wrapper.
+
+**Normative rules**
 
 1. `co.generic(T)` is valid **only as the complete right-hand side** of a `co.type` alias declaration directly owned by a generic `co.class`.
 2. `T` must resolve to exactly one generic marker declared in that class's own immediately associated `@co.dap.generic(types=[...])`. A normal type symbol, undeclared name, or marker from an unrelated generic context is invalid.
-3. `co.generic(T)` is a deferred type expression, not a generic binder, value allocation, nominal wrapper, type constructor usable in arbitrary expression positions, or a runtime value-holding operation.
+3. `co.generic(T)` does not declare a binder, allocate a value, introduce nominal identity, or perform a runtime operation.
 4. Specializing the enclosing class substitutes the concrete argument for `T` before resolving aliases that depend on it. `Item co.type = co.generic(T);` resolves to the same canonical type identity as the substituted argument.
 5. Other class-local `co.type` aliases may refer to this alias by name through ordinary type expressions. Alias references must be acyclic and resolve to a valid type after substitution.
 6. `co.generic(T)` is invalid outside generic classes, including in non-generic classes, structs, modules, signatures, ordinary functions/methods, and standalone type declarations. Generic parameters used in ordinary field and callable type positions continue to use their existing marker syntax (`value T;`); they do not require `co.generic(T)`.
@@ -3486,6 +3478,7 @@ A child may refer to an inherited type alias only when existing parent-member ac
 The frontend recognizes class-local `co.type` members in eligible class bodies, distinguishes class type members from instance fields, resolves `co.generic(T)` only in its permitted RHS position, validates the owning generic marker, and builds an acyclic substitution/alias dependency graph. It resolves each generic parent's canonical specialized type before member/conflict checking and records class-owned type members and their access metadata in the serialized class symbol surface. Invalid marker placement uses `InvalidGenericDeclaration`; alias or member conflicts use the ordinary `DuplicateDeclaration`, `InheritedMemberConflict`, `UnresolvedSymbol`, `InaccessibleSymbol`, or `TypeMismatch` diagnostic as applicable. An invalid class-parent specialization uses `InvalidRelationship` or `GenericResolutionFailure` as applicable.
 
 These rules concern **class-level type projection**, not the separately defined value-path-dependent types (`x.type`) described under Dependent Types.
+
 #### Existential Types
 
 `co.exists(...)` is the built-in RHS type-expression constructor for a named existential type. It is not a keyword and does not introduce a separate declaration category. The enclosing declaration remains an ordinary `co.type` declaration.
