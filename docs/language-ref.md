@@ -3431,6 +3431,42 @@ B) Path-dependent types
     2. Path-dependent In FoLang how it would be
 ```
 
+#### Existential Types
+
+`co.exists(...) `is the built-in RHS type-expression constructor for a named existential type. It is not a keyword and does not introduce a separate declaration category. The enclosing declaration remains an ordinary `co.type` declaration
+
+```folang
+Job co.type =
+    co.exists({T},
+        (
+            input=T,
+            validate=(T)->(co.bool),
+            process=(T)->()
+        )
+    );
+
+employeeJob Job = Job{
+    input: employee,
+    validate: validate,
+    process: process
+};
+
+invoiceJob Job = Job{
+    input: invoice,
+    validate: validate,
+    process: process
+};
+
+
+runJob(job Job)->() = {
+    job.validate(job.input).then({
+        job.process(job.input);
+    });
+}
+```
+
+> where validate,process  can take generic function with mappings or full generic or specialization to types allowed  or specific monomorphic functions
+
 #### Polymorphic Types
 
 `co.forall(...)` is the built-in RHS type-expression constructor for a named polymorphic type. It is not a keyword and does not introduce a separate declaration category. The enclosing declaration remains an ordinary `co.type` declaration.
