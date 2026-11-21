@@ -587,7 +587,7 @@ Derived types are named through `co.type` declarations before ordinary variable 
 |---|---|
 | `co.variants(...)` | Defines a closed parameterized variant family. Entries may reference declaration type parameters. |
 | `co.tag(...)` | Runtime type/value package used where a value must carry its concrete runtime type descriptor. |
-| `co.hokrlt` | Type-valued holder used where a type itself is carried as a value/object. |
+| `co.hokrlt` | Universal abstract holder for any first-class FoLang object, including values, type objects, and kind objects; category-specific capabilities require checked recovery. |
 | `co.newtype` | Introduces a type identity distinct from its representation/base type. |
 | `co.opaquetype` | Introduces an opaque wrapper identity with the one-way representation/assignment rules defined below. |
 | `co.subtype` | Type-level set/range selecting strict subtypes of the referenced type. |
@@ -599,7 +599,7 @@ Derived types are named through `co.type` declarations before ordinary variable 
 | `co.predicateType` | Type-level predicate/filter over candidate types. |
 | `co.data(...)` | Concrete closed ADT constructor whose payload types are already concrete/resolved. It is not parameterized by declaration-head type parameters. |
 | `co.type` | General named type declaration kind. |
-| `co.generic` | Generic-dependent type alias expression inside generic classes |
+| `co.generic(T)` | RHS wrapper for a class-declared generic type marker `T` in a concrete class-local `co.type` alias; resolves on class specialization. |
 | `co.shape` | Shape/type-expression facility for callable/type shapes where defined by the syntax and semantic rules in this reference. |
 | `co.exists`|A value contains some particular T, but its identity is hidden from the consumer.|
 
@@ -994,12 +994,16 @@ y co.hokrlt = co.struct;
 z co.hokrlt = 100;
 p co.hokrlt = co.type;
 q co.hokrlt = co.kind;
-r co.hokrlt = co.any
+r co.hokrlt = co.any;
 ```
 
-`co.hokrlt` carries a type as a value/object in contexts that require type-valued data.
+`co.hokrlt` is the universal **abstract holder** for any first-class FoLang object, including ordinary values, concrete type objects, type/declaration-kind objects, and other language objects. Storing an object in `co.hokrlt` does not alter its concrete identity or grant the holder access to operations defined only on that concrete object. Only the operations actually declared for `co.hokrlt` are directly available through a `co.hokrlt`-typed expression.
 
-It is not the declaration kind used to define a new source type; named source types continue to use `co.type` and the applicable type constructors. Rather Universal holder for first-class language objects.
+A consumer obtains more specific operations only after a **checked recovery/conversion** to the appropriate holder or concrete type. For example, a held integer may be recovered as `co.int`; a held concrete type object may be recovered through the `co.type` category; and a held `co.struct` kind object may be recovered through the `co.struct` category. A conversion is valid only when the actual contained object satisfies the requested target category or type. An invalid conversion must fail according to the language's checked-conversion contract; it must never silently treat one category as another. No conversion is implied merely because the destination exposes an operation that happens to share a name.
+
+`co.any` remains the general **ordinary-value** abstraction where permitted; `co.type` provides the **type-object/type-declaration** abstraction; `co.hokrlt` covers **all first-class language objects**, including those outside the ordinary value or type-object domains. They are distinct even if a particular object is representable through more than one abstraction. `co.hokrlt` is not itself the declaration form for named source types: those continue to use `co.type` and its type-expression constructors.
+
+The exact syntax of an explicit checked-conversion operation is governed by the general conversion rules and standard-package API, not introduced by this section. Compiler implementations must not infer an unchecked downcast or reinterpretation from an assignment to a narrower holder.
 
 #### Value Type
 
@@ -1328,21 +1332,23 @@ blockOrMacro co.kind = block | macro;
 
 It is primarily useful in macros and other metaprogramming facilities that inspect or transform program structure.
 
-#### Generic Type Constructor
+#### Generic-Dependent Class Type Aliases
 
 ```folang
+// Repository.fol
 @co.dap.generic(types=[{name=T}])
 _ co.class = {
-    Item   co.type = co.generic(T);
+    @co.dap.public
+    Item co.type = co.generic(T);
+
+    @co.dap.public
     Result co.type = co.List(Item);
 }
-
-Item gets the concrete type while initialiazation and Result is co.List of that concrete type.
 ```
 
-`co.generic(...)` Generic-dependent type alias expression inside generic classes.
+`@co.dap.generic(types=[{name=T}])` declares the generic marker `T`; `co.generic(T)` does **not** declare or bind another marker. It is an explicit RHS type-expression wrapper allowing a class-local `co.type` alias to denote the **eventually concrete** type argument associated with `T`. The alias resolves when the enclosing generic class is specialized. `Item` therefore resolves to the bound type and `Result` to `co.List` of that same type. Both remain ordinary identity-preserving aliases, not new nominal types or runtime class fields.
 
-Current FoLang generic declarations use the generic declaration/binder mechanisms defined by the generic rules rather than relying on this constructor. This construct only applicable inside a Generic class
+The exact restrictions, member lookup, visibility and class-inheritance substitution rules are specified in [Generic Class Inheritance and Type Members](#generic-class-inheritance-and-type-members).
 
 #### Function Types
 
@@ -1441,7 +1447,7 @@ When Geneircs are initialized with concrete type, Folang doesn't allow them to b
 
 FoLang supports a rich set of user-defined type forms for different modeling requirements.
 
-FoLang does not permit ordinary inner, nested, or anonymous named type declarations directly inside another type definition except through the explicit mechanisms defined by the language.
+FoLang does not permit ordinary inner, nested, or anonymous named type declarations directly inside another type definition except through the explicit mechanisms defined by the language. Generic `co.class` bodies specifically permit class-owned concrete `co.type` aliases under [Generic Class Inheritance and Type Members](#generic-class-inheritance-and-type-members); this exception does not admit arbitrary nested declaration kinds.
 
 #### CStructs
 
@@ -2978,7 +2984,7 @@ add(a U, b U)->(T) = { $=> a + b; }
 
 ##### Generic Marker Classification
 
-Names listed by the immediately associated `@co.dap.generic(types=[...])` are **generic markers** for that declaration. In applicable type positions the parser/frontend records those names as generic-marker references; they are not looked up as ordinary type symbols.
+Names listed by the immediately associated `@co.dap.generic(types=[...])` are **generic markers** for that declaration. In applicable type positions the parser/frontend records those names as generic-marker references; they are not looked up as ordinary type symbols. In a generic class, `co.generic(T)` may additionally wrap an existing class-owned marker `T` only in the specifically permitted class-local `co.type` RHS position; it neither changes marker classification nor introduces a new binder.
 
 A type-position identifier that is **not** listed in that declaration's `types=[...]` list is an ordinary type reference. It is resolved through the normal symbol/type environment and is a compiler error when no such type exists.
 
@@ -3431,16 +3437,55 @@ result := box(co.forall({U}, (U)->(U))); // compiler error: use PolyId
 
 `@co.dap.generic(types=[...])` remains the generic-marker mechanism for declarations that define their own generic signature. `co.forall(...)` separately introduces binders owned by the named `co.type` value it constructs. An ordinary named function that implements such a callable type inherits that type's binder and callable contract and therefore does not redeclare the same binders with `@co.dap.generic`. Functions express higher-rank parameters and returns by using these named polymorphic callable types. See [Polymorphic Types](#polymorphic-types), [Named Callable-Type Implementation](#named-callable-type-implementation), and [Generic Declarations and Parameterized Types](#generic-declarations-and-parameterized-types).
 
-#### Generics Inheritances and Types
+#### Generic Class Inheritance and Type Members
 
-```
-This is in conceptual stage not supported.
+A generic `co.class` may inherit a class with a concrete generic specialization, including a specialization dependent on the child's own generic markers. Class inheritance remains subject to the existing `@co.dap.oops` rules: at most two direct class parents, applicable accessibility rules, explicit selection of inherited concrete methods for exposure through the child type, and the existing override/conflict requirements. A generic class specialization is not itself an implicit covariance or contravariance rule: `Derived(X)` inheriting `Base(X)` does not make `Base(X)` and `Base(Y)` interchangeable.
 
-A) Abstract vs concrete type members
-B) Path-dependent types
-    1. Type-level projection
-    2. Path-dependent In FoLang how it would be
+A generic class may declare **concrete class-owned type aliases** using `Name co.type = type-expression;` within its class body. This is a specifically permitted exception to the ordinary restriction on nested named type declarations; it does not permit nested `co.struct`, `co.class`, or abstract `co.associatedType` declarations. Class type aliases are compile-time members, not instance fields, do not participate in instance initialization, and do not create distinct nominal type identities. `co.associatedType` continues to belong to module/signature contracts.
+
+```folang
+// Repository.fol
+@co.dap.generic(types=[{name=T}])
+_ co.class = {
+    @co.dap.public
+    Item co.type = co.generic(T);
+
+    @co.dap.public
+    Result co.type = co.List(Item);
+}
+
+// CachedRepository.fol
+@co.dap.generic(types=[{name=U}])
+@co.dap.oops(classes=[Repository(U)])
+_ co.class = {
+    // Inherited parent methods follow the existing opt-in/override rules.
+}
 ```
+
+The `classes=[Repository(U)]` entry identifies the generic parent's specialization relative to the child's declared marker `U`. For `CachedRepository(Employee)`, the direct parent is `Repository(Employee)`; its `Item` is `Employee` and its `Result` is `co.List(Employee)`. A non-generic class may likewise inherit a fully specified `Repository(Employee)` parent. All parent generic arguments must resolve consistently with their declared bounds before the effective parent type is accepted.
+
+##### `co.generic(T)` rules
+
+1. `co.generic(T)` is valid **only as the complete right-hand side** of a `co.type` alias declaration directly owned by a generic `co.class`.
+2. `T` must resolve to exactly one generic marker declared in that class's own immediately associated `@co.dap.generic(types=[...])`. A normal type symbol, undeclared name, or marker from an unrelated generic context is invalid.
+3. `co.generic(T)` is a deferred type expression, not a generic binder, value allocation, nominal wrapper, type constructor usable in arbitrary expression positions, or a runtime value-holding operation.
+4. Specializing the enclosing class substitutes the concrete argument for `T` before resolving aliases that depend on it. `Item co.type = co.generic(T);` resolves to the same canonical type identity as the substituted argument.
+5. Other class-local `co.type` aliases may refer to this alias by name through ordinary type expressions. Alias references must be acyclic and resolve to a valid type after substitution.
+6. `co.generic(T)` is invalid outside generic classes, including in non-generic classes, structs, modules, signatures, ordinary functions/methods, and standalone type declarations. Generic parameters used in ordinary field and callable type positions continue to use their existing marker syntax (`value T;`); they do not require `co.generic(T)`.
+
+##### Lookup, access, and inheritance
+
+Class-owned type aliases share the owning class's member namespace and use ordinary member accessibility classifiers, with the class's normal default when unspecified. External type-level projection requires an accessible resolved class specialization; the qualified expression `Repository(Employee).Result` denotes the corresponding alias type. This is a **type-level projection**, not a path-dependent instance-member type, and it does not add runtime state to a class instance. When the ordinary rule requires a named specialized type before use, the projected type can be named by a `co.type` declaration.
+
+Parent specialization and all accessible inherited type aliases are resolved before checking child uses of those names. An inherited type alias retains its canonical declaring owner and substituted representation; inheritance does not manufacture a new type identity. The class's existing member visibility and relationship-conflict rules apply, but a collision between distinct inherited type members must not be silently selected by parent order. The child must resolve the ambiguity through an explicit, legal qualification or a non-conflicting locally declared alias; unresolved member-name collisions are `InheritedMemberConflict` errors. An inaccessible alias cannot become public merely through inheritance or re-export.
+
+A child may refer to an inherited type alias only when existing parent-member access rules allow it. A child-local alias with the same name as an inherited alias must have an unambiguous resolution and may not silently change an inherited contract. Generic substitution does not change method dispatch, override eligibility, or existing `@co.dap.oops` opt-in selection behavior.
+
+##### Frontend obligations
+
+The frontend recognizes class-local `co.type` members in eligible class bodies, distinguishes class type members from instance fields, resolves `co.generic(T)` only in its permitted RHS position, validates the owning generic marker, and builds an acyclic substitution/alias dependency graph. It resolves each generic parent's canonical specialized type before member/conflict checking and records class-owned type members and their access metadata in the serialized class symbol surface. Invalid marker placement uses `InvalidGenericDeclaration`; alias or member conflicts use the ordinary `DuplicateDeclaration`, `InheritedMemberConflict`, `UnresolvedSymbol`, `InaccessibleSymbol`, or `TypeMismatch` diagnostic as applicable. An invalid class-parent specialization uses `InvalidRelationship` or `GenericResolutionFailure` as applicable.
+
+These rules concern **class-level type projection**, not the separately defined value-path-dependent types (`x.type`) described under Dependent Types.
 #### Existential Types
 
 `co.exists(...)` is the built-in RHS type-expression constructor for a named existential type. It is not a keyword and does not introduce a separate declaration category. The enclosing declaration remains an ordinary `co.type` declaration.
@@ -3546,7 +3591,7 @@ process  : (Employee)->()
 
 A standalone generic function may satisfy either callable requirement when its generic parameters can be resolved consistently with the required callable signature.
 
-For generic callable values supplied directly as existential members, the compiler may use the already-resolved existential witness as the parameter-type context for selecting a valid generic instantiation. This is contextual callable specialization, not inference of generic results from the destination type of a function call.
+For generic callable values supplied directly as existential members, the compiler **must** use an already-resolved existential witness as the required parameter-type context when that context is needed to select a unique valid generic instantiation. The compiler rejects the construction when no unique compatible specialization exists. This is contextual callable specialization, not inference of generic results from the destination type of a function call.
 
 Generic result types continue to follow the existing FoLang rules: they must be determined from resolved generic parameters, applicable mappings, explicit generic arguments, or another explicitly supported generic-resolution mechanism. The expected result type does not independently determine an unresolved generic parameter.
 
@@ -3589,7 +3634,7 @@ The consumer is permitted to perform operations justified by the existential mem
 
 ##### Witness Identity and Type Safety
 
-Each independently constructed existential package has its own abstract witness identity.
+Each independently constructed existential package is type-checked with its own abstract witness identity; equal binder spellings across packages do not prove compatible witnesses. Copying, assigning, or passing an existing package preserves that package's established witness/member correlations rather than selecting a fresh unrelated concrete witness.
 
 Two values of the same existential type do not necessarily contain the same concrete witness type.
 
@@ -4982,9 +5027,10 @@ _ co.class = {
     @co.dap.class
     @co.dap.public
     @co.dap.override
-    @@new(a co.hokrlt, b co.hokrlt)->(co.uninit) = {
-        T co.type = a;
-        R co.type = b;
+    @@new(a co.type, b co.type)->(co.uninit) = {
+        // a and b are type-object inputs, not generic marker declarations.
+        // Check their identities against the class specialization's T and R;
+        // neither T nor R is rebound by creating a co.type alias here.
 
         // Valid protected parent-lifecycle access from a lifecycle customization.
         this->parent::new();
@@ -5011,7 +5057,9 @@ _ co.class = {
     getEmployee(id T)->(Employee) = {}
 }
 
-a := Employee::new(co.int, co.string); // valid: public developer @@new
+// Illustrative lifecycle invocation: actual type arguments must agree with
+// the selected Employee specialization and the @@new type-object checks.
+a := Employee::new(co.int, co.string); // public developer @@new
 b := a::init(1, "Rao");                          // valid: public developer @@init
 ```
 
@@ -5534,6 +5582,8 @@ ordinary declaration
 
 
 ## Appendix A - Derived FoLang EBNF
+
+For derived grammar generation, a generic-class body additionally admits a concrete class-owned `co.type` member, whose RHS is an ordinary type expression or the restricted complete expression `co.generic(GenericMarker)`. The parser must reject `co.generic` in all other positions. Generic class-parent entries may carry type arguments that reference the child's declared generic markers. In existential type construction, `co.exists({binders}, (name=type-expression, ...))` uses a nonempty named-member type-body with each member name unique and each binder scoped only to that body. These requirements are normative in the sections above even if the separately maintained derived EBNF has not yet been regenerated.
 
 The standalone EBNF below is a derived documentation aid for the syntax defined by this reference. It is not normative and does not add to, narrow, or override the language requirements stated here. If it is incomplete or conflicts with this reference, this reference governs; update the EBNF to match the normative requirements.
 
