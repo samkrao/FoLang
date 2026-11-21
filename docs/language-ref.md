@@ -599,7 +599,7 @@ Derived types are named through `co.type` declarations before ordinary variable 
 | `co.predicateType` | Type-level predicate/filter over candidate types. |
 | `co.data(...)` | Concrete closed ADT constructor whose payload types are already concrete/resolved. It is not parameterized by declaration-head type parameters. |
 | `co.type` | General named type declaration kind. |
-| `co.generic` | Reserved/future generic-type constructor; it is not part of the active generic declaration model unless this reference explicitly enables it. |
+| `co.generic` | Generic-dependent type alias expression inside generic classes |
 | `co.shape` | Shape/type-expression facility for callable/type shapes where defined by the syntax and semantic rules in this reference. |
 | `co.exists`|A value contains some particular T, but its identity is hidden from the consumer.|
 
@@ -990,11 +990,16 @@ Most ordinary built-in scalar and collection types behave as their declared stan
 
 ```folang
 x co.hokrlt = co.int;
+y co.hokrlt = co.struct;
+z co.hokrlt = 100;
+p co.hokrlt = co.type;
+q co.hokrlt = co.kind;
+r co.hokrlt = co.any
 ```
 
 `co.hokrlt` carries a type as a value/object in contexts that require type-valued data.
 
-It is not the declaration kind used to define a new source type; named source types continue to use `co.type` and the applicable type constructors.
+It is not the declaration kind used to define a new source type; named source types continue to use `co.type` and the applicable type constructors. Rather Universal holder for first-class language objects.
 
 #### Value Type
 
@@ -1326,12 +1331,18 @@ It is primarily useful in macros and other metaprogramming facilities that inspe
 #### Generic Type Constructor
 
 ```folang
-SomeType co.type = co.generic(T);
+@co.dap.generic(types=[{name=T}])
+_ co.class = {
+    Item   co.type = co.generic(T);
+    Result co.type = co.List(Item);
+}
+
+Item gets the concrete type while initialiazation and Result is co.List of that concrete type.
 ```
 
-`co.generic(...)` is reserved/future syntax unless the active language profile explicitly enables it.
+`co.generic(...)` Generic-dependent type alias expression inside generic classes.
 
-Current FoLang generic declarations use the generic declaration/binder mechanisms defined by the generic rules rather than relying on this constructor.
+Current FoLang generic declarations use the generic declaration/binder mechanisms defined by the generic rules rather than relying on this constructor. This construct only applicable inside a Generic class
 
 #### Function Types
 
@@ -5394,7 +5405,7 @@ Default Backend may provide information of Prototype Object link on reflection b
 | `co.pattern`||
 | `co.control` | continuation, CPS, full/delimited continuation control, shift/reset, prompt/control, and continuation-oriented control abstractions |
 | `co.cpca` | concurrent/parallel/async submission, task/thread execution facilities, future/callback completion, await, pools, channels, events, actors, process/distributed facilities, scheduling, fiber/coroutine facilities, defer, lazy, and related execution APIs |
-| `co.hokrlt`||
+| `co.hokrlt`| universal holder of first class objects it can be a value, type, kind anything which is supported by `folang`|
 | `co.operator`|"arity","fixity',"associativity"|
 |`co.operator.fixity`| "prefix", "infix", "postfix"|
 |`co.operator.arity`|"unary", "binary"|
