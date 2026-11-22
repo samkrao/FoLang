@@ -439,19 +439,19 @@ func (s RefinementType) IsTypeDefintion() bool {
 }
 
 // x co.type = co.generic(T)
-type GenericType struct {
+type GenericMarkerType struct {
 	AbstractType
 }
 
-func (s GenericType) SymbolTypeKind() string {
+func (s GenericMarkerType) SymbolTypeKind() string {
 	return string(reflect.TypeOf(s).Name())
 }
 
-func (s GenericType) IsType() bool {
+func (s GenericMarkerType) IsType() bool {
 	return true
 }
 
-func (s GenericType) IsTypeDefintion() bool {
+func (s GenericMarkerType) IsTypeDefintion() bool {
 	return true
 }
 
