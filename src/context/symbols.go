@@ -624,6 +624,8 @@ func (s TagType) IsTypeDefintion() bool {
 }
 
 // x co.type = co.polymorphic({U}, (U,U)->(U));
+// or
+// y co.type = co.forall({T}, (T,T)->(T));
 // similar to saying forall(T).(T, T)->(T) in other languages
 type PolymorphicType struct {
 	AbstractType
@@ -636,6 +638,21 @@ func (s PolymorphicType) IsType() bool {
 	return true
 }
 func (s PolymorphicType) IsTypeDefintion() bool {
+	return true
+}
+
+// x co.type = co.exists({U}, (T)));
+type existentialType struct {
+	AbstractType
+}
+
+func (s existentialType) SymbolTypeKind() string {
+	return string(reflect.TypeOf(s).Name())
+}
+func (s existentialType) IsType() bool {
+	return true
+}
+func (s existentialType) IsTypeDefintion() bool {
 	return true
 }
 
