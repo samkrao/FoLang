@@ -4739,6 +4739,8 @@ The currently defined standard implementation classification is:
 | `kind` | Meaning |
 |---|---|
 | `co.dap.implementationKind.runtime` | Lower through a registered backend/runtime handler identified by `operation`. |
+| `co.dap.implementationKind.ffi` | Lower through a registered ffi handler identified by `operation` and `library`. |
+
 
 
 ***
