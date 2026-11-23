@@ -7,9 +7,10 @@ import symboltable "github.com/samkrao/fo-lang/src/context"
 // kind; the AST does not repeat that classification.
 type DefinitionHeader struct {
 	Span
-	Symbol   symboltable.SymbolID
-	Metadata []MetadataRef
-	Kind_    NodeKind
+	Symbol          symboltable.SymbolID
+	Metadata        []MetadataRef
+	Kind_           NodeKind
+	ResolutionState ResolutionState
 }
 
 // Declaration represents a declaration whose resolved information is fully

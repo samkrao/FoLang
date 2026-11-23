@@ -3,7 +3,8 @@ package ast
 import symboltable "github.com/samkrao/fo-lang/src/context"
 
 type StatementHeader struct {
-	Kind_ NodeKind
+	Kind_           NodeKind
+	ResolutionState ResolutionState
 }
 type EmptyStatement struct {
 	Span

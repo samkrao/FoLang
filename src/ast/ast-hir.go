@@ -49,11 +49,22 @@ type Binder interface {
 	BoundSymbols() []symboltable.SymbolID
 }
 
+type ResolutionState string
+
+const (
+	NOTSTARTED          ResolutionState = "Not_Started"
+	DIRTY               ResolutionState = "Dirty"
+	INVALID             ResolutionState = "Invalid"
+	VALID               ResolutionState = "Valid"
+	PARTIALLY_VALIDATED ResolutionState = "Partially_Validated"
+)
+
 // MetadataRef preserves the occurrence span while referring to the canonical
 // MetaDataApplication record in FolangSymbols.SymbolsById.
 type MetadataRef struct {
 	Span
-	Symbol symboltable.SymbolID
+	Symbol          symboltable.SymbolID
+	ResolutionState ResolutionState
 }
 
 func (MetadataRef) NodeKind() string { return "MetadataRef" }
@@ -62,8 +73,9 @@ func (MetadataRef) NodeKind() string { return "MetadataRef" }
 // expression that supplies the block's value.
 type Block struct {
 	Span
-	Items  []SET
-	Result Expr
+	Items           []SET
+	Result          Expr
+	ResolutionState ResolutionState
 }
 
 func (Block) NodeKind() string { return "Block" }
@@ -72,9 +84,10 @@ func (Block) NodeKind() string { return "Block" }
 // here rather than to the file's primary declaration.
 type SourceFile struct {
 	Span
-	Filename string
-	Metadata []MetadataRef
-	Items    []SET
+	Filename        string
+	Metadata        []MetadataRef
+	Items           []SET
+	ResolutionState ResolutionState
 }
 
 func (SourceFile) NodeKind() string { return "SourceFile" }

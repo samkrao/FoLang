@@ -5,8 +5,9 @@ import symboltable "github.com/samkrao/fo-lang/src/context"
 // TypeHeader links source type syntax to its resolved semantic type symbol.
 type TypeHeader struct {
 	Span
-	Symbol symboltable.SymbolID
-	Kind_  NodeKind
+	Symbol          symboltable.SymbolID
+	Kind_           NodeKind
+	ResolutionState ResolutionState
 }
 
 // NamedType is a direct type reference.

@@ -3,7 +3,8 @@ package ast
 import symboltable "github.com/samkrao/fo-lang/src/context"
 
 type ExpresshonHeader struct {
-	Kind_ NodeKind
+	Kind_           NodeKind
+	ResoultionState ResolutionState
 }
 
 // LiteralExpr refers to the canonical Literal symbol containing the lexeme and
