@@ -53,21 +53,15 @@ all other source text
 
 ### Language Evolution and Compatibility
 
-The alpha period permits experimentation, consolidation, implementation, renaming, syntax changes, and removal. Before version 1.0, a proposed structural feature becomes part of the active language only when a specification revision explicitly incorporates it into the normative syntax requirements and defines its applicable normative semantics. A proposed or future feature that is mentioned only descriptively does not become active syntax.
+**FoLang's fundamental language features and semantics are complete and final at version 1.0.** All features defined for FoLang 1.0 are permanent. No existing feature will be removed, and no new fundamental language features, AST node categories, grammar constructs, keywords, operators, declaration kinds, or built-in metadata forms will be introduced after release. Existing language semantics remain unchanged.
 
-Nothing is carried into version 1.0 as implicitly reserved or unsupported merely because it appeared in an example, table, inventory, or design discussion. A spelling is reserved while unsupported only when this specification explicitly identifies that spelling or form as reserved/future syntax.
+FoLang continues to evolve through standard and third-party libraries, derived types, annotations, decorators, macros, native integration, and other existing extension mechanisms. All developers, including the language provider, follow the same language rules.
 
-At version 1.0, the **structural FoLang language surface** closes permanently. After version 1.0, no later major or minor release introduces new core grammar forms, hard/contextual keywords, declaration kinds, operator spellings or fixities, or built-in `@co.*` metadata-form names. Existing structural constructs retain the externally observable semantics defined by the 1.0 specification, except for corrections that restore already-stated intent.
+Compilers, backends, runtimes, AST/HIR representations, tooling, and optimizations may evolve without changing fundamental language semantics.
 
-The standard-package rule is narrower and separate. After version 1.0, the `co.*` **package/subpackage hierarchy** is frozen, while ordinary declarations inside those existing packages may evolve through later language-provided `.folenc` artifacts that expose the standard package contexts. Adding or updating an ordinary type, unit-level function, method, module, algorithm, data structure, or other declaration inside an existing package is package-API evolution and does not create new grammar or a new package path.
-
-FoLang remains extensible after 1.0 through extension mechanisms already defined by the 1.0 language, including third-party libraries, user-defined annotations and decorators, macros, custom operators, native integration, including FFI, dynamic-runtime facilities, backend integration points, and other explicitly defined extension mechanisms. Frontend, backend, runtime, optimizer, intermediate representation, diagnostics, compilation strategy, memory management, code generation, performance, and hardware support may evolve provided externally observable FoLang semantics remain conforming.
-
-A post-1.0 correction may fix an implementation/specification discrepancy or remove an internal contradiction when doing so restores the already-stated intent of an existing feature. A correction does not introduce a new grammar form, keyword, declaration kind, operator grammar, metadata-form name, or previously unavailable structural capability.
-
+Corrections are permitted only to fix defects, resolve ambiguities, or restore established semantics—not to introduce, remove, or redefine language features.
 
 ***
-
 
 ## Lexical Profile and Statement Termination
 
@@ -372,7 +366,8 @@ The selected backend may supply this contract to tell the frontend which FoLang/
   "protocol":           "folang-plugin/1.0",
   "hir_schema":         "folang-hir/1",
   "wire":               "protobuf",
-  "runtime_operations": "folang-runtime-operations/1"
+  "runtime_operations": "folang-runtime-operations/1",
+  "feature_set": "featureset-6"
 }
 ```
 
@@ -5573,6 +5568,35 @@ anonymous/labelled block
 ordinary declaration
     -> SymbolInfo in the active SymbolTable
 ```
+
+
+
+
+## Parsing flow
+
+FoLang Frontend
+    |
+    +-- Parse source code
+    +-- Build AST and symbol tables
+    +-- Complete semantic analysis
+    +-- Verify AST and symbol resolution
+    |
+    +-- Final Pre-HIR Compatibility Phase
+    |      |
+    |      +-- Execute backend capability command
+    |      +-- Read JSON response into memory
+    |      +-- Validate protocol and HIR compatibility
+    |      +-- Resolve the declared feature set
+    |      +-- Validate program against that feature set
+    |      |
+    |      +-- Incompatible → Compilation error
+    |
+    +-- Generate HIR
+    +-- Serialize using negotiated wire format
+    +-- Send HIR to backend
+    |
+    v
+Backend Code Generation
 
 
 
