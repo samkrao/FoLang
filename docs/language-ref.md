@@ -5574,6 +5574,7 @@ ordinary declaration
 
 ## Parsing flow
 
+```folang
 FoLang Frontend
     |
     +-- Parse source code
@@ -5597,7 +5598,7 @@ FoLang Frontend
     |
     v
 Backend Code Generation
-
+```
 
 
 ## Appendix A - Derived FoLang EBNF
